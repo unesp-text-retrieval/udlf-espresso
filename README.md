@@ -1,7 +1,7 @@
 # UDLF Text Expresso
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/d4f4c8e5-8f3e-4b8a-8b42-2f1c8e5e3f3e" alt="UDLF Expresso" width="600"/>
+  <img src="assets/udlf-expresso-logo.png" alt="UDLF Expresso" width="600"/>
 </p>
 
 UDLF Text Expresso is a lightweight experimentation harness for end-to-end text retrieval and contextual re-ranking, designed around Hydra configs and pluggable storage backends (Local/S3). It bundles BEIR data collection, BM25 and dense retrieval, UDLF (Unsupervised Distance Learning Framework) re-ranking, and metric computation under a single reproducible pipeline.
