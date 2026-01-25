@@ -1,0 +1,14 @@
+hydra-core==1.3.2
+omegaconf==2.3.0
+rank-bm25==0.2.2
+boto3==1.34.0
+pytest==9.0.1
+beir==2.0.0
+sentence-transformers==5.1.2
+faiss-cpu==1.13.0
+numpy==2.3.5
+google-cloud-storage==3.6.0
+pandas==2.3.3
+torch==2.9.1
+tqdm==4.67.1
+pyUDLF==0.8

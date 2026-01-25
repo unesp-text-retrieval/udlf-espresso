@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "udlf-text-expresso"
+version = "0.0.1"
+description = "UDLF Text Expresso: experimental framework for text retrieval and reranking"
+authors = [{ name = "Luis Venezian" }]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools]
+packages = ["udlf_text_expresso"]
+package-dir = {"" = "src"}
+
+[tool.setuptools.package-data]
+udlf_text_expresso = ["**/*.yaml"]

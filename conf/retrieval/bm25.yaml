@@ -1,0 +1,3 @@
+# BM25 specific overrides
+index_path: /path/to/bm25/index
+k: 1000

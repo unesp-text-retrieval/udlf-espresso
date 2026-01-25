@@ -1,0 +1,245 @@
+method: UDLF
+limit: null
+binary_path: /Users/luisvenezian/Documents/masters/bin/udlf
+config_path: /Users/luisvenezian/Documents/masters/pyUDLF-experiment/config.ini
+window_size: 200
+task: UDL
+input_format: RK
+input_rk_format: STR
+experiments:
+  - name: bfstree-k1
+    method: BFSTREE
+    config:
+      window_size: ${rerank.window_size}
+      k: 1
+      correlation_metric: RBO
+  - name: bfstree-k3
+    method: BFSTREE
+    config:
+      window_size: ${rerank.window_size}
+      k: 3
+      correlation_metric: RBO
+  - name: bfstree-k5
+    method: BFSTREE
+    config:
+      window_size: ${rerank.window_size}
+      k: 5
+      correlation_metric: RBO
+  - name: bfstree-k10
+    method: BFSTREE
+    config:
+      window_size: ${rerank.window_size}
+      k: 10
+      correlation_metric: RBO
+  - name: bfstree-k20
+    method: BFSTREE
+    config:
+      window_size: ${rerank.window_size}
+      k: 20
+      correlation_metric: RBO
+  - name: bfstree-k30
+    method: BFSTREE
+    config:
+      window_size: ${rerank.window_size}
+      k: 30
+      correlation_metric: RBO
+  - name: bfstree-k40
+    method: BFSTREE
+    config:
+      window_size: ${rerank.window_size}
+      k: 40
+      correlation_metric: RBO
+  - name: bfstree-k50
+    method: BFSTREE
+    config:
+      window_size: ${rerank.window_size}
+      k: 50
+      correlation_metric: RBO
+  - name: bfstree-k75
+    method: BFSTREE
+    config:
+      window_size: ${rerank.window_size}
+      k: 75
+      correlation_metric: RBO
+  
+  - name: cprr-k1
+    method: CPRR
+    config:
+      window_size: ${rerank.window_size}
+      k: 1
+      t: 1
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: cprr-k3
+    method: CPRR
+    config:
+      window_size: ${rerank.window_size}
+      k: 3
+      t: 1
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: cprr-k5
+    method: CPRR
+    config:
+      window_size: ${rerank.window_size}
+      k: 5
+      t: 1
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: cprr-k10
+    method: CPRR
+    config:
+      window_size: ${rerank.window_size}
+      k: 10
+      t: 1
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: cprr-k20
+    method: CPRR
+    config:
+      window_size: ${rerank.window_size}
+      k: 20
+      t: 1
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: cprr-k30
+    method: CPRR
+    config:
+      window_size: ${rerank.window_size}
+      k: 30
+      t: 1
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: cprr-k40
+    method: CPRR
+    config:
+      window_size: ${rerank.window_size}
+      k: 40
+      t: 1
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: cprr-k50
+    method: CPRR
+    config:
+      window_size: ${rerank.window_size}
+      k: 50
+      t: 1
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: cprr-k75
+    method: CPRR
+    config:
+      window_size: ${rerank.window_size}
+      k: 75
+      t: 1
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  
+  - name: rdpac-k1
+    method: RDPAC
+    config:
+      window_size: ${rerank.window_size}
+      k_start: 1
+      k_end: 1
+      k_inc: 1
+      l_mult: 2
+      p: 0.6
+      pl: 0.99
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: rdpac-k3
+    method: RDPAC
+    config:
+      window_size: ${rerank.window_size}
+      k_start: 1
+      k_end: 3
+      k_inc: 1
+      l_mult: 2
+      p: 0.6
+      pl: 0.99
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: rdpac-k5
+    method: RDPAC
+    config:
+      window_size: ${rerank.window_size}
+      k_start: 1
+      k_end: 5
+      k_inc: 1
+      l_mult: 2
+      p: 0.6
+      pl: 0.99
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: rdpac-k10
+    method: RDPAC
+    config:
+      window_size: ${rerank.window_size}
+      k_start: 1
+      k_end: 10
+      k_inc: 1
+      l_mult: 2
+      p: 0.6
+      pl: 0.99
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: rdpac-k20
+    method: RDPAC
+    config:
+      window_size: ${rerank.window_size}
+      k_start: 1
+      k_end: 20
+      k_inc: 1
+      l_mult: 2
+      p: 0.6
+      pl: 0.99
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: rdpac-k30
+    method: RDPAC
+    config:
+      window_size: ${rerank.window_size}
+      k_start: 1
+      k_end: 30
+      k_inc: 1
+      l_mult: 2
+      p: 0.6
+      pl: 0.99
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: rdpac-k40
+    method: RDPAC
+    config:
+      window_size: ${rerank.window_size}
+      k_start: 1
+      k_end: 40
+      k_inc: 1
+      l_mult: 2
+      p: 0.6
+      pl: 0.99
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: rdpac-k50
+    method: RDPAC
+    config:
+      window_size: ${rerank.window_size}
+      k_start: 1
+      k_end: 50
+      k_inc: 1
+      l_mult: 2
+      p: 0.6
+      pl: 0.99
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}
+  - name: rdpac-k75
+    method: RDPAC
+    config:
+      window_size: ${rerank.window_size}
+      k_start: 1
+      k_end: 75
+      k_inc: 1
+      l_mult: 2
+      p: 0.6
+      pl: 0.99
+      task: ${rerank.task}
+      input_format: ${rerank.input_format}

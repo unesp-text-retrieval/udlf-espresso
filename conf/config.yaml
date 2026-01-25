@@ -1,0 +1,101 @@
+defaults:
+  - rerank: udlf
+  - storage: gcs
+  - _self_
+
+run_id: null
+force: false
+model: bm25  # Unified model parameter: bm25, miniLM-L6-v2, contriever-msmarco, bge-small-en-v1.5, etc.
+
+dataset: scifact  # Can use simple string or nested config with .name
+
+index:
+  name: ${model}
+
+method:
+  name: udlf
+
+storage:
+  kind: gcs
+  bucket: text-udlf-expresso
+  prefix: ""
+
+pipeline:
+  steps: [data_collection, index_bm25, retrieval, rerank, metrics]
+data_collection:
+  output_dir: outputs/${run_id}/dataset
+  dataset_name: ${dataset}  # Resolved from dataset parameter
+  source: beir_${dataset}  # Auto-detects category-based datasets
+  work_dir: .beir_cache
+  split: test
+  cleanup_cache: false
+  gcs_corpus_path: null  # Auto-configured for category-based datasets
+
+retrieval:
+  k: 200
+  output_dir: outputs/${run_id}/retrieval
+  corpus: []   # list of objects with id, text
+  queries: []  # list of objects with id, text
+  cache_path: null
+  rerank_list_limit: null
+
+indexing:
+  cache_path: outputs/${run_id}/indexes/bm25.pkl
+
+rerank:
+  output_dir: outputs/${run_id}/rerank
+  base_output_dir: outputs/${run_id}
+  dataset_name: ${dataset.name}
+  index_name: ${model}
+  method: ${method.name}
+  binary_path: /Users/luisvenezian/Documents/masters/bin/udlf
+  config_path: /Users/luisvenezian/Documents/masters/pyUDLF-experiment/config.ini
+  window_size: 200
+  task: UDL
+  input_format: RK
+  input_rk_format: STR
+  k: 10
+  t: 1
+  cutoffs:
+    map: ${metrics.cutoffs.map}
+    recall: ${metrics.cutoffs.recall}
+    precision: ${metrics.cutoffs.precision}
+    ndcg: ${metrics.cutoffs.ndcg}
+
+metrics:
+  k: [5, 10, 20, 50, 100, 200, 1000]
+  output_dir: outputs/${run_id}/metrics
+  qrels: []  # list objects: id, relevant (list of doc_ids)
+  cutoffs:
+    map: ${metrics.k}
+    recall: ${metrics.k}
+    precision: ${metrics.k}
+    ndcg: ${metrics.k}
+
+# Dense indexing configuration (optional)
+dense_indexing:
+  output_dir: outputs/${run_id}
+  dataset_name: ${dataset.name}
+  model_name: sentence-transformers/all-MiniLM-L6-v2
+  model_alias: miniLM-L6-v2
+  normalize: true
+  k: 200
+  device: null
+  batch_size: 64
+  use_subprocess: false
+  omp_threads: 1
+  rerank_list_limit: 200
+  variants:
+    - model_name: sentence-transformers/all-MiniLM-L6-v2
+      model_alias: miniLM-L6-v2
+      normalize: true
+      k: 200
+    - model_name: facebook/contriever-msmarco
+      model_alias: contriever-msmarco
+      normalize: false
+      k: 200
+    - model_name: BAAI/bge-small-en-v1.5
+      model_alias: bge-small-en-v1.5
+      normalize: true
+      k: 200
+

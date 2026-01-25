@@ -1,0 +1,21 @@
+method: UDLF
+limit: null
+binary_path: /Users/luisvenezian/Documents/masters/bin/udlf
+config_path: /Users/luisvenezian/Documents/masters/pyUDLF-experiment/config.ini
+window_size: 200
+task: UDL
+input_format: RK
+input_rk_format: STR
+experiments:
+  - name: rdpac-k75
+    method: RDPAC
+    config:
+      window_size: 200
+      k_start: 1
+      k_end: 75
+      k_inc: 1
+      l_mult: 2
+      p: 0.6
+      pl: 0.99
+      task: UDL
+      input_format: RK
