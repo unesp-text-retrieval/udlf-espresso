@@ -1,7 +1,7 @@
 # UDLF Text Expresso
 
 <p align="center">
-  <img src="assets/udlf-expresso-logo.png" alt="UDLF Expresso" width="600"/>
+  <img src="assets/udlf-espresso-logo.png" alt="UDLF Expresso" width="600"/>
 </p>
 
 UDLF Text Expresso is a lightweight experimentation harness for end-to-end text retrieval and contextual re-ranking, designed around Hydra configs and pluggable storage backends (Local/S3). It bundles BEIR data collection, BM25 and dense retrieval, UDLF (Unsupervised Distance Learning Framework) re-ranking, and metric computation under a single reproducible pipeline.
@@ -16,7 +16,7 @@ UDLF Text Expresso is a lightweight experimentation harness for end-to-end text 
 
 ## Repository Layout
 - `conf/` – Hydra configuration tree (`config.yaml` plus per-step overrides).
-- `src/udlf_text_expresso/` – pipeline implementation, steps, and utilities.
+- `src/udlf_text_espresso/` – pipeline implementation, steps, and utilities.
 - `tests/` – pytest suite, including rerank input pivot coverage.
 - `outputs/` and `dataset/` – default local artifact roots (ignored by VCS).
 
@@ -28,7 +28,7 @@ Optional: activate your preferred environment (Conda, venv) before installing.
 
 ### PyUDLF Setup for re-ranking
 PyUDLF is a wrapper to run the UDLF (Unsupervised Distance Learning Framework) binary, it helps to organize the code in a single language and
-modify parameters easily, create your conda env, install udlf-text-expresso requirements and go ahead following 
+modify parameters easily, create your conda env, install udlf-text-espresso requirements and go ahead following 
 instructions from pyUDLF [github repository](https://github.com/UDLF/pyUDLF) and install it in the same environment.
 
 Default binary path is `/usr/local/bin/udlf`. Update `conf/rerank/udlf.yaml` to set project-wide defaults.
@@ -43,28 +43,28 @@ Scifact is a good starting point to validate your environment is working, it is 
   RUN_ID="paper-assets"
 
   # 1. Collect corpus/topics/qrels and run BM25 baseline + metrics
-  python -m udlf_text_expresso.runner \
+  python -m udlf_text_espresso.runner \
     run_id=$RUN_ID \
     dataset=scifact \
     model=bm25 \
     pipeline.steps='[data_collection,index,retrieve,metrics]'
 
   # 2. Dense: MiniLM
-  python -m udlf_text_expresso.runner \
+  python -m udlf_text_espresso.runner \
     run_id=$RUN_ID \
     dataset=scifact \
     model=miniLM-L6-v2 \
     pipeline.steps='[index,retrieve,metrics]'
 
   # 3. Dense: BGE small
-  python -m udlf_text_expresso.runner \
+  python -m udlf_text_espresso.runner \
     run_id=$RUN_ID \
     dataset=scifact \
     model=bge-small-en-v1.5 \
     pipeline.steps='[index,retrieve,metrics]'
 
   # 4. Dense: Contriever
-  python -m udlf_text_expresso.runner \
+  python -m udlf_text_espresso.runner \
     run_id=$RUN_ID \
     dataset=scifact \
     model=contriever-msmarco \
@@ -82,7 +82,7 @@ Scifact is a good starting point to validate your environment is working, it is 
   1. **Collect, index, and score the BM25 baseline**
      ```bash
      RUN_ID="scidocs-paper"
-     python -m udlf_text_expresso.runner \
+     python -m udlf_text_espresso.runner \
        run_id=$RUN_ID \
        dataset.name=scidocs \
        data_collection.source=beir_scidocs \
@@ -91,7 +91,7 @@ Scifact is a good starting point to validate your environment is working, it is 
      ```
   2. **Optional dense retrievers** – rerun with the same `RUN_ID` so FAISS indexes are cached under the Scidocs directory. For example, to build and score BGE-small:
      ```bash
-     python -m udlf_text_expresso.runner \
+     python -m udlf_text_espresso.runner \
        run_id=$RUN_ID \
        dataset.name=scidocs \
        data_collection.source=beir_scidocs \
@@ -101,7 +101,7 @@ Scifact is a good starting point to validate your environment is working, it is 
      ```
   3. **Run UDLF reranking** – once `retrieval.tsv` exists for a retriever, reuse the same `run_id` to launch the UDLF reranking:
      ```bash
-     python -m udlf_text_expresso.runner \
+     python -m udlf_text_espresso.runner \
        run_id=$RUN_ID \
        dataset.name=scidocs \
        model=bge-small-en-v1.5 \
@@ -110,17 +110,17 @@ Scifact is a good starting point to validate your environment is working, it is 
      Repeat for other retrieval models (e.g., `index.name=bm25`, `index.name=miniLM-L6-v2`, etc.).
     4. **Generate the comparative report** – the HTML summariser automatically sweeps every dataset and retriever under the `run_id` hierarchy:
       ```bash
-      python -m udlf_text_expresso.reporting.metrics_report $RUN_ID
+      python -m udlf_text_espresso.reporting.metrics_report $RUN_ID
       ```
       Open `outputs/$RUN_ID/reports/udlf_metrics_report.html` to compare Scidocs baselines vs. reranks. To rebuild a single-dataset report (written alongside that dataset), add one or more `--dataset <name>` flags:
       ```bash
-      python -m udlf_text_expresso.reporting.metrics_report $RUN_ID --dataset scidocs
+      python -m udlf_text_espresso.reporting.metrics_report $RUN_ID --dataset scidocs
       ```
       The dataset-scoped HTML lands in `outputs/$RUN_ID/dataset/scidocs/reports/udlf_metrics_report.html`, which makes it easy to rerun the same command after introducing new retrieval models without touching other corpora. Supplying multiple `--dataset` flags re-aggregates just those datasets, while omitting the flag retains the cross-dataset view (e.g., Scifact + Scidocs under `paper-assets`).
 
 - **Rerank limit overrides** (cap ranked lists to 200 docs without editing configs):
   ```bash
-  python -m udlf_text_expresso.runner \
+  python -m udlf_text_espresso.runner \
       pipeline.steps='[retrieve,rerank]' \
       retrieval.rerank_list_limit=200
   ```
@@ -128,7 +128,7 @@ Scifact is a good starting point to validate your environment is working, it is 
 - **UDLF reranking with multiple experiments** (assumes `retrieval.tsv` already exists for the chosen dataset/index):
   ```bash
   RUN_ID="paper-assets"
-  python -m udlf_text_expresso.runner \
+  python -m udlf_text_espresso.runner \
       run_id=$RUN_ID \
       dataset=scifact \
       model=miniLM-L6-v2 \
@@ -188,7 +188,7 @@ The tests include coverage for rerank input generation to guard against regressi
 
 ## Extending the Stack
 - **New retrieval models**: subclass the appropriate retriever, register a Hydra config, and append a pipeline step.
-- **New rerankers**: follow `udlf_text_expresso/rerank/udlf_runner.py`, emitting TSV scores and registering artifacts.
+- **New rerankers**: follow `udlf_text_espresso/rerank/udlf_runner.py`, emitting TSV scores and registering artifacts.
 - **Custom metrics**: implement in `metrics/eval.py` and wire them into `MetricsStep`.
 
 This project is intended for research and experimentation; adjust licensing or deployment specifics to fit your environment.
@@ -610,11 +610,11 @@ Both BM25 and Dense retrieval automatically call `_prepare_rerank_inputs()` to c
 
 ## GCS Storage Organization
 
-**Base Path:** `gs://text-udlf-expresso/outputs/paper-assets/dataset/`
+**Base Path:** `gs://text-udlf-espresso/outputs/paper-assets/dataset/`
 
 **Complete Path Structure:**
 ```
-gs://text-udlf-expresso/outputs/paper-assets/dataset/
+gs://text-udlf-espresso/outputs/paper-assets/dataset/
 ├── arguana/
 │   ├── extracted/
 │   ├── indexes/
@@ -695,7 +695,7 @@ To better understand the practical impact of re-ranking beyond aggregate metrics
 
 **Basic usage (with GCS data):**
 ```bash
-conda activate udlf-expresso
+conda activate udlf-espresso
 python generate_rerank_report.py \
   --datasets bbc-news wos mental-health \
   --models bm25 miniLM-L6-v2 \

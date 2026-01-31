@@ -21,7 +21,7 @@ METHODS = ["cprr", "bfstree", "rdpac"]
 K_VALUES = [1, 3, 5, 10, 20, 30, 40, 50, 75]
 
 # GCS configuration
-BUCKET_NAME = "text-udlf-expresso"
+BUCKET_NAME = "text-udlf-espresso"
 BASE_PATH = "outputs/paper-assets/dataset"
 
 # Expected runs per dataset and total

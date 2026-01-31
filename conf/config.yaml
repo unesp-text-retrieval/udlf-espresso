@@ -17,7 +17,7 @@ method:
 
 storage:
   kind: gcs
-  bucket: text-udlf-expresso
+  bucket: text-udlf-espresso
   prefix: ""
 
 pipeline:

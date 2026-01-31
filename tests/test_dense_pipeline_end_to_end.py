@@ -15,17 +15,17 @@ from typing import Dict, List
 import pytest  # type: ignore[import-not-found]
 from omegaconf import OmegaConf  # type: ignore[import-not-found]
 
-from udlf_text_expresso.core.artifacts import Artifact
-from udlf_text_expresso.core.paths import metrics_file_path, ranks_root_dir
-from udlf_text_expresso.core.pipeline import PipelineContext
-from udlf_text_expresso.core.storage import LocalStorage
-from udlf_text_expresso.metrics.eval import (
+from udlf_text_espresso.core.artifacts import Artifact
+from udlf_text_espresso.core.paths import metrics_file_path, ranks_root_dir
+from udlf_text_espresso.core.pipeline import PipelineContext
+from udlf_text_espresso.core.storage import LocalStorage
+from udlf_text_espresso.metrics.eval import (
     compute_map,
     compute_ndcg,
     compute_precision,
     compute_recall,
 )
-from udlf_text_expresso.runner import DenseRetrievalStep, IndexDenseStep, MetricsStep
+from udlf_text_espresso.runner import DenseRetrievalStep, IndexDenseStep, MetricsStep
 from test_utils.dense_stubs import DenseTestEnvironment, patch_dense_environment
 from test_utils.sample_dataset import build_sample_dataset
 

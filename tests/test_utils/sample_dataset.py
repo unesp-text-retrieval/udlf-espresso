@@ -7,14 +7,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Tuple
 
-from udlf_text_expresso.core.paths import (
+from udlf_text_espresso.core.paths import (
     dataset_root,
     transformed_documents_and_topics_tsv,
     transformed_documents_jsonl,
     extracted_path,
     transformed_path,
 )
-from udlf_text_expresso.core.text import normalize_query_text
+from udlf_text_espresso.core.text import normalize_query_text
 
 
 @dataclass

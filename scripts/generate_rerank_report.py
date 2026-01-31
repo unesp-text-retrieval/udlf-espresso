@@ -15,7 +15,7 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from udlf_text_expresso.reporting.rerank_comparison_report import main
+from udlf_text_espresso.reporting.rerank_comparison_report import main
 
 if __name__ == '__main__':
     main()

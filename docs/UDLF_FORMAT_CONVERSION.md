@@ -71,7 +71,7 @@ PLAIN-2    MED-2429    198    (rank 3, score = 198)
 ## Implementation
 
 ### Core Function: `prepare_udlf_input_files()`
-Located in: `src/udlf_text_expresso/rerank/udlf_runner.py`
+Located in: `src/udlf_text_espresso/rerank/udlf_runner.py`
 
 **Purpose**: Converts retrieval rows (TREC format) to UDLF input files
 
@@ -92,8 +92,8 @@ for rank, did in enumerate(doc_list, start=1):
 
 ## Testing
 Comprehensive tests in:
-- `tests/udlf_text_expresso/rerank/test_udlf_input_prep.py`
-- `tests/udlf_text_expresso/rerank/test_udlf_trec_conversion.py`
+- `tests/udlf_text_espresso/rerank/test_udlf_input_prep.py`
+- `tests/udlf_text_espresso/rerank/test_udlf_trec_conversion.py`
 
 Tests verify:
 ✅ TREC → UDLF format conversion (ranked-list and lists files)

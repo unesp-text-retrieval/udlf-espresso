@@ -105,8 +105,8 @@ class DenseTestEnvironment:
 
 def patch_dense_environment(monkeypatch) -> DenseTestEnvironment:
     fake_faiss = FakeFaissModule()
-    monkeypatch.setattr("udlf_text_expresso.retrieval.dense.SentenceTransformer", StubSentenceTransformer)
-    monkeypatch.setattr("udlf_text_expresso.retrieval.dense.get_faiss", lambda: fake_faiss)
-    monkeypatch.setattr("udlf_text_expresso.retrieval.dense._faiss_module", fake_faiss, raising=False)
-    monkeypatch.setattr("udlf_text_expresso.runner.get_faiss", lambda: fake_faiss)
+    monkeypatch.setattr("udlf_text_espresso.retrieval.dense.SentenceTransformer", StubSentenceTransformer)
+    monkeypatch.setattr("udlf_text_espresso.retrieval.dense.get_faiss", lambda: fake_faiss)
+    monkeypatch.setattr("udlf_text_espresso.retrieval.dense._faiss_module", fake_faiss, raising=False)
+    monkeypatch.setattr("udlf_text_espresso.runner.get_faiss", lambda: fake_faiss)
     return DenseTestEnvironment(fake_faiss=fake_faiss)

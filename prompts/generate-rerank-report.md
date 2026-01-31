@@ -6,7 +6,7 @@ This prompt describes how to generate an HTML report that visualizes and compare
 
 ## Objective
 
-Create a Python module (`src/udlf_text_expresso/reporting/rerank_comparison_report.py`) and CLI script (`generate_rerank_report.py`) that:
+Create a Python module (`src/udlf_text_espresso/reporting/rerank_comparison_report.py`) and CLI script (`generate_rerank_report.py`) that:
 
 1. Reads experiment results from `experiment_progress_data.json`
 2. Selects the **single best model+method combination per dataset** based on precision@20 improvement
@@ -52,7 +52,7 @@ Create a Python module (`src/udlf_text_expresso/reporting/rerank_comparison_repo
 
 ### Qrels Data Sources
 
-**Location**: `gs://text-udlf-expresso/outputs/paper-assets/dataset/{dataset}/qrels.txt`
+**Location**: `gs://text-udlf-espresso/outputs/paper-assets/dataset/{dataset}/qrels.txt`
 
 **Two formats exist:**
 
@@ -74,11 +74,11 @@ Create a Python module (`src/udlf_text_expresso/reporting/rerank_comparison_repo
 
 ### Rankings Data
 
-**Original rankings**: `gs://text-udlf-expresso/outputs/paper-assets/dataset/{dataset}/rerank/input/{model}/ranked-list/data.txt`
+**Original rankings**: `gs://text-udlf-espresso/outputs/paper-assets/dataset/{dataset}/rerank/input/{model}/ranked-list/data.txt`
 
 **Re-ranked**: 
-- Primary: `gs://text-udlf-expresso/outputs/paper-assets/dataset/{dataset}/rerank/output/{model}/{method}-k{k}/data.txt`
-- Fallback: `gs://text-udlf-expresso/outputs/paper-assets/dataset/{dataset}/rerank/output/{model}/{method}-k{k}/ranks.tsv`
+- Primary: `gs://text-udlf-espresso/outputs/paper-assets/dataset/{dataset}/rerank/output/{model}/{method}-k{k}/data.txt`
+- Fallback: `gs://text-udlf-espresso/outputs/paper-assets/dataset/{dataset}/rerank/output/{model}/{method}-k{k}/ranks.tsv`
 
 **Formats**:
 
@@ -344,7 +344,7 @@ Usage:
 """
 
 import argparse
-from udlf_text_expresso.reporting.rerank_comparison_report import RerankComparisonReportGenerator
+from udlf_text_espresso.reporting.rerank_comparison_report import RerankComparisonReportGenerator
 
 def main():
     parser = argparse.ArgumentParser(description='Generate re-ranking comparison report')
@@ -383,7 +383,7 @@ The JSON uses uppercase dataset names, but GCS paths use lowercase:
 
 ```python
 dataset_path = dataset.lower()
-gcs_path = f"gs://text-udlf-expresso/outputs/paper-assets/dataset/{dataset_path}/..."
+gcs_path = f"gs://text-udlf-espresso/outputs/paper-assets/dataset/{dataset_path}/..."
 ```
 
 ### 2. File Extension Handling
@@ -469,12 +469,12 @@ K="50"
 
 # Get original ranking
 echo "Original TOP@10:"
-gsutil cat gs://text-udlf-expresso/outputs/paper-assets/dataset/$DATASET/rerank/input/$MODEL/ranked-list/data.txt | \
+gsutil cat gs://text-udlf-espresso/outputs/paper-assets/dataset/$DATASET/rerank/input/$MODEL/ranked-list/data.txt | \
   awk -v qid="${QUERY_ID}.txt" '$1 == qid {for(i=2; i<=11; i++) print "  #"i-1": "$i}'
 
 # Get re-ranked
 echo "Re-ranked TOP@10:"
-gsutil cat gs://text-udlf-expresso/outputs/paper-assets/dataset/$DATASET/rerank/output/$MODEL/$METHOD-k$K/data.txt | \
+gsutil cat gs://text-udlf-espresso/outputs/paper-assets/dataset/$DATASET/rerank/output/$MODEL/$METHOD-k$K/data.txt | \
   awk -v qid="${QUERY_ID}.txt" '$1 == qid {for(i=2; i<=11; i++) print "  #"i-1": "$i}'
 ```
 

@@ -36,13 +36,13 @@ This document describes the iterative workflow for monitoring and executing the 
 ## Prerequisites
 
 ### 1. Google Cloud Storage Access
-- Bucket: `gs://text-udlf-expresso`
+- Bucket: `gs://text-udlf-espresso`
 - Base path: `outputs/paper-assets/dataset/`
 - Authenticated with `gcloud` CLI
 
 ### 2. Python Environment
 ```bash
-conda activate udlf-expresso  # or your environment name
+conda activate udlf-espresso  # or your environment name
 ```
 
 ### 3. Required Dependencies
@@ -147,7 +147,7 @@ If experiments can't run due to missing input files:
 
 **Run retrieval phase for affected models:**
 ```bash
-python -m udlf_text_expresso.runner \
+python -m udlf_text_espresso.runner \
   run_id=paper-assets \
   dataset.name={dataset} \
   index.name={model} \
@@ -230,7 +230,7 @@ python run_selective_experiments.py
 ### Issue: Input files not found for model
 **Solution:** Run retrieval phase first:
 ```bash
-python -m udlf_text_expresso.runner \
+python -m udlf_text_espresso.runner \
   run_id=paper-assets \
   dataset.name={dataset} \
   index.name={model} \
