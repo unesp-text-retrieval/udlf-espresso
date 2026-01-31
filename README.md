@@ -1,8 +1,5 @@
-# UDLF Text Espresso
+# UDLF Text Espresso ☕
 
-<p align="left">
-  <img src="assets/udlf-espresso-logo.png" alt="UDLF Espresso" width="300"/>
-</p>
 
 UDLF Text Espresso is a lightweight experimentation harness for end-to-end text retrieval and contextual re-ranking, designed around Hydra configs and pluggable storage backends (Local/Cloud). It bundles BEIR data collection, BM25 and dense retrieval, UDLF (Unsupervised Distance Learning Framework) re-ranking, and metric computation under a single reproducible pipeline.
 
