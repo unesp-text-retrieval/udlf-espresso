@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Monitor progress of UDLF Text Expresso experiments in Google Cloud Storage.
+Monitor progress of UDLF Text Espresso experiments in Google Cloud Storage.
 
 This script checks for the existence of metrics.json files in GCS and generates
 an HTML progress report showing completed runs and percentage remaining.
@@ -354,7 +354,7 @@ def generate_html_report(stats: Dict, completed: List[Dict], missing: List[Dict]
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UDLF Text Expresso - Experiment Progress Report</title>
+    <title>UDLF Text Espresso - Experiment Progress Report</title>
     <style>
         body {{
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -556,7 +556,7 @@ def generate_html_report(stats: Dict, completed: List[Dict], missing: List[Dict]
 </head>
 <body>
     <div class="header">
-        <h1>UDLF Text Expresso - Experiment Progress Report</h1>
+        <h1>UDLF Text Espresso - Experiment Progress Report</h1>
         <div class="timestamp">Generated: {timestamp}</div>
     </div>
 
@@ -974,7 +974,7 @@ def print_console_summary(stats: Dict, invalid_metrics: List[Dict]):
 
 def main():
     """Main execution function."""
-    print("UDLF Text Expresso - Experiment Progress Monitor")
+    print("UDLF Text Espresso - Experiment Progress Monitor")
     print("=" * 70)
     
     # Initialize GCS client

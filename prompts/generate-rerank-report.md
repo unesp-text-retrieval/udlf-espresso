@@ -2,7 +2,7 @@
 
 ## Context
 
-This prompt describes how to generate an HTML report that visualizes and compares re-ranking improvements in the UDLF Text Expresso project. The report shows before/after ranked lists to demonstrate how unsupervised re-ranking methods improve document retrieval quality.
+This prompt describes how to generate an HTML report that visualizes and compares re-ranking improvements in the UDLF Text Espresso project. The report shows before/after ranked lists to demonstrate how unsupervised re-ranking methods improve document retrieval quality.
 
 ## Objective
 
@@ -518,6 +518,6 @@ gsutil cat gs://text-udlf-espresso/outputs/paper-assets/dataset/$DATASET/rerank/
 
 - The report is designed for academic research presentation
 - Focuses on **unsupervised** re-ranking methods (CPRR, BFSTREE, RDPAC)
-- Part of UDLF Text Expresso framework for document list re-ranking
+- Part of UDLF Text Espresso framework for document list re-ranking
 - Original UDLF framework was designed for image re-ranking at UNESP
 - This extends UDLF to text document retrieval research

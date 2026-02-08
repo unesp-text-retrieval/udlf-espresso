@@ -1351,7 +1351,7 @@ class RerankComparisonReportGenerator:
         return f"""
         <footer>
             <p>Report generated on {timestamp}</p>
-            <p>UDLF Text Expresso Framework | Document Re-ranking Comparison Report</p>
+            <p>UDLF Text Espresso Framework | Document Re-ranking Comparison Report</p>
         </footer>
     </div>
 </body>

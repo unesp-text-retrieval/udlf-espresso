@@ -15,6 +15,12 @@ UDLF Text Espresso is a lightweight experimentation harness for end-to-end text 
 - `conf/` – Hydra configuration tree (`config.yaml` plus per-step overrides).
 - `src/udlf_text_espresso/` – pipeline implementation, steps, and utilities.
 - `tests/` – pytest suite, including rerank input pivot coverage.
+- `scripts/` – standalone helper scripts for report generation, monitoring, and paper assets.
+- `docs/` – detailed guides for reproducing key outputs:
+  - [`EXPERIMENT_WORKFLOW.md`](docs/EXPERIMENT_WORKFLOW.md) – iterative experiment execution across 756+ experiments.
+  - [`UDLF_FORMAT_CONVERSION.md`](docs/UDLF_FORMAT_CONVERSION.md) – TREC ↔ UDLF format conversion flow.
+  - [`LATEX_TABLES.md`](docs/LATEX_TABLES.md) – LaTeX re-ranking effectiveness tables (design, algorithm, reproducibility).
+  - [`MANIFOLD_FIGURES.md`](docs/MANIFOLD_FIGURES.md) – UMAP/t-SNE manifold visualisation figures (design, algorithm, reproducibility).
 - `outputs/` and `dataset/` – default local artifact roots (ignored by VCS).
 
 ## Installing
@@ -182,6 +188,75 @@ Run the full suite with:
 pytest -q tests
 ```
 The tests include coverage for rerank input generation to guard against regressions in the ranked-list pivot logic.
+
+## UMAP Category Clustering Visualization
+
+For category-based datasets (like mental-health, bbc-news, wos), you can generate UMAP visualizations to understand how document categories cluster in the embedding space and how re-ranking affects the category distribution of retrieved results.
+
+### Quick Start
+```bash
+# Generate UMAP visualization report
+python -m udlf_text_espresso.reporting.category_umap_report \
+    --dataset-path outputs/paper-assets/dataset/mental-health \
+    --model bge-small-en-v1.5 \
+    --sample-size 5000
+```
+
+### With Before/After Re-ranking Comparison
+```bash
+python -m udlf_text_espresso.reporting.category_umap_report \
+    --dataset-path outputs/paper-assets/dataset/mental-health \
+    --model bge-small-en-v1.5 \
+    --before outputs/paper-assets/dataset/mental-health/rerank/input/bge-small-en-v1.5/ranked-list/data.txt \
+    --after outputs/paper-assets/dataset/mental-health/rerank/output/cprr_k10/ranked-list/data.txt \
+    --sample-size 5000
+```
+
+### What the Visualizations Show
+1. **Embedding Scatter Plot**: Documents colored by category in 2D UMAP space
+2. **Category Distribution Comparison**: How re-ranking changes the category composition of top-k results
+3. **Relevance Improvement Heatmap**: Which categories benefit most from re-ranking at different k values
+4. **Query Trajectory Plot**: How the centroid of top-k results shifts after re-ranking
+
+See the interactive notebook at `notebooks/umap_category_clustering.ipynb` for detailed exploration.
+
+## Paper Assets Generation
+
+Two scripts produce publication-ready assets directly from experiment data. Both are fully documented in `docs/` with high-level algorithms that allow reproduction even if the scripts are lost.
+
+### LaTeX Re-Ranking Tables
+
+Generate LaTeX tables summarising re-ranking effectiveness across all datasets, models, and methods. See [`docs/LATEX_TABLES.md`](docs/LATEX_TABLES.md) for full details.
+
+```bash
+# Compact tables for a paper (one best method per model, @20 only)
+python scripts/generate_latex_tables.py --mode compact
+
+# Full tables for a dissertation (all model × method combos, multiple cutoffs)
+python scripts/generate_latex_tables.py --mode complete --cutoffs 20 50 200
+```
+
+Output: `outputs/paper-assets/latex_rerank_tables.tex` — include via `\input{}` in LaTeX.
+
+### Manifold Visualisation Figures (UMAP / t-SNE)
+
+Generate static PDF figures showing how UDLF re-ranking reshapes document neighbourhoods in the embedding space. See [`docs/MANIFOLD_FIGURES.md`](docs/MANIFOLD_FIGURES.md) for full details.
+
+```bash
+# BBC-News (small, 5 categories)
+python scripts/generate_manifold_figures.py \
+    --dataset bbc-news --model contriever-msmarco --method cprr --k 75
+
+# Mental-Health (20K docs, 4 categories)
+python scripts/generate_manifold_figures.py \
+    --dataset mental-health --model contriever-msmarco --method cprr --k 75
+
+# HuffPost (33K docs, 42 categories)
+python scripts/generate_manifold_figures.py \
+    --dataset huffpost-news --model contriever-msmarco --method cprr --k 75
+```
+
+Output: three PDFs per run in `outputs/paper-assets/figures/` (scatter, overlay, purity chart).
 
 ## Extending the Stack
 - **New retrieval models**: subclass the appropriate retriever, register a Hydra config, and append a pipeline step.
@@ -607,11 +682,11 @@ Both BM25 and Dense retrieval automatically call `_prepare_rerank_inputs()` to c
 
 ## GCS Storage Organization
 
-**Base Path:** `gs://text-udlf-espresso/outputs/paper-assets/dataset/`
+**Base Path:** `gs://text-udlf-expresso/outputs/paper-assets/dataset/`
 
 **Complete Path Structure:**
 ```
-gs://text-udlf-espresso/outputs/paper-assets/dataset/
+gs://text-udlf-expresso/outputs/paper-assets/dataset/
 ├── arguana/
 │   ├── extracted/
 │   ├── indexes/

@@ -12,3 +12,7 @@ pandas==2.3.3
 torch==2.9.1
 tqdm==4.67.1
 pyUDLF==0.8
+
+# Visualization dependencies (optional, for UMAP category reports)
+umap-learn>=0.5.0
+plotly>=5.0.0

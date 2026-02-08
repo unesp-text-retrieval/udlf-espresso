@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "udlf-text-espresso"
 version = "0.0.1"
-description = "UDLF Text Expresso: experimental framework for text retrieval and reranking"
+description = "UDLF Text Espresso: experimental framework for text retrieval and reranking"
 authors = [{ name = "Luis Venezian" }]
 readme = "README.md"
 requires-python = ">=3.10"
