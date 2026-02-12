@@ -10,7 +10,7 @@ Three figure types are produced per dataset / model / method combination:
 |--------|--------------|----------------|
 | **Embedding scatter** | All documents projected to 2D via UMAP, coloured by category | Gives a global view of the corpus structure — how well-separated the categories are in the learned embedding space |
 | **Before / after overlay** | Side-by-side zoomed panels of a query's top-K neighbourhood before and after re-ranking | Shows that UDLF concentrates same-category documents around the query, removing cross-category noise |
-| **Category purity chart** | Dumbbell + Δ bar chart comparing same-category proportion in top-K before vs. after | Aggregates the per-category improvement across all queries — the quantitative complement to the overlay |
+| **Category precision chart** | Dumbbell + Δ bar chart comparing same-category proportion in top-K before vs. after | Aggregates the per-category improvement across all queries — the quantitative complement to the overlay |
 
 ## Quick Start
 
@@ -118,29 +118,29 @@ If the Python script is lost, here is the logic to reproduce each figure from sc
 
 ### Figure 2 — Before / After Overlay
 
-1. **Select queries**: for every query, compute **Purity@K** before and after re-ranking:
+1. **Select queries**: for every query, compute **P@K** (Precision@K) before and after re-ranking:
    ```
-   Purity@K(q) = |{d ∈ top-K(q) : category(d) = category(q)}| / K
+   P@K(q) = |{d ∈ top-K(q) : category(d) = category(q)}| / K
    ```
-   Compute Δ = Purity_after − Purity_before. Sort all queries by Δ descending. Pick the top-1 per category (for diversity). Use up to 8 queries.
+   Compute Δ = P_after − P_before. Sort all queries by Δ descending. Pick the top-1 per category (for diversity). Use up to 8 queries.
 
 2. **For each selected query, draw two panels (Before / After)**:
    - Plot all documents as a faint background scatter (alpha ~0.10).
    - Highlight the top-K retrieved documents with larger, opaque markers. Same-category docs get black edges; cross-category docs get grey edges.
    - Mark the query with a gold star.
    - **Auto-zoom**: compute the bounding box of all highlighted points (union of before and after), add 30% margin, and set both panels to the same viewport. This shared zoom is critical — it makes the spatial shift visible.
-   - Annotate the panel title with the Purity@K value.
+   - Annotate the panel title with the P@K value.
 
 3. **Layout**: N rows × 2 columns, one row per query.
 
-### Figure 3 — Category Purity Chart
+### Figure 3 — Category Precision Chart
 
-1. **Compute per-category average purity** before and after:
+1. **Compute per-category average precision** before and after:
    ```
-   avg_purity(cat) = mean over all queries q where category(q)=cat of Purity@K(q)
+   avg_precision(cat) = mean over all queries q where category(q)=cat of P@K(q)
    ```
 2. **Left panel — dumbbell chart**: horizontal connected-dot plot. For each category, draw a line connecting the before-dot (blue) and after-dot (red). Zoom the x-axis to the data range (not 0–100%) so small improvements are visible.
-3. **Right panel — Δ bar chart**: horizontal bars showing `avg_purity_after − avg_purity_before` per category. Green for positive, red for negative. Annotate each bar with the signed percentage.
+3. **Right panel — Δ bar chart**: horizontal bars showing `avg_precision_after − avg_precision_before` per category. Green for positive, red for negative. Annotate each bar with the signed percentage.
 
 ---
 
@@ -152,9 +152,9 @@ If the Python script is lost, here is the logic to reproduce each figure from sc
 - t-SNE is supported via `--reducer tsne` for comparison if needed.
 
 ### Why auto-zoom the overlay panels?
-The original full-view showed all 2,225+ documents, compressing the top-20 neighbourhood into a tiny cluster. The improvement from 95% to 100% purity was barely noticeable. Auto-zooming to the query's neighbourhood (with 30% margin and shared viewport between before/after) makes the spatial shift immediately clear.
+The original full-view showed all 2,225+ documents, compressing the top-20 neighbourhood into a tiny cluster. The improvement from 95% to 100% precision was barely noticeable. Auto-zooming to the query's neighbourhood (with 30% margin and shared viewport between before/after) makes the spatial shift immediately clear.
 
-### Why select queries by best Purity@20 improvement?
+### Why select queries by best P@20 improvement?
 Random sampling often picked queries where re-ranking had little effect (e.g. already 95% → 100%). Selecting the queries with the largest Δ improvement guarantees that the overlay figure showcases the most dramatic examples — which is the whole point of including these figures in a paper.
 
 ### Why dumbbell chart instead of grouped bars?
@@ -164,7 +164,7 @@ The original grouped bar chart started the y-axis at 0%, which compressed differ
 For datasets >10K documents, UMAP computation takes 1–4 minutes and PDFs grow to 2–6 MB. Subsampling to 5K reduces both but:
 - May miss the best Δ queries (they might not be in the subsample)
 - Produces sparser cluster visualisations
-- Purity values in Figure 3 are always computed over **all** queries regardless of subsampling
+- Precision values in Figure 3 are always computed over **all** queries regardless of subsampling
 
 **Recommendation**: use full data for final paper figures. Use `--sample-size 5000` for rapid iteration.
 
@@ -172,7 +172,7 @@ For datasets >10K documents, UMAP computation takes 1–4 minutes and PDFs grow 
 
 ## Known Limitations
 
-- **Category-based datasets only**: the category colouring and purity metric require document IDs that encode categories. BEIR datasets (scifact, nfcorpus, etc.) use opaque doc IDs, so the figures would not be meaningful.
+- **Category-based datasets only**: the category colouring and precision metric require document IDs that encode categories. BEIR datasets (scifact, nfcorpus, etc.) use opaque doc IDs, so the figures would not be meaningful.
 - **FAISS index required**: the script needs a FAISS flat index to extract embeddings. If only raw embeddings exist (e.g. numpy files), the `load_embeddings_from_faiss` function would need adaptation.
 - **Single retrieval model per run**: each invocation visualises one model. To compare models, run the script multiple times and compose figures in LaTeX.
 
@@ -210,10 +210,10 @@ Running for BBC-News produces three files:
 outputs/paper-assets/figures/
   bbc-news_contriever-msmarco_cprr_k75_scatter.pdf   (~91 KB)
   bbc-news_contriever-msmarco_cprr_k75_overlay.pdf   (~340 KB)
-  bbc-news_contriever-msmarco_cprr_k75_purity.pdf    (~28 KB)
+  bbc-news_contriever-msmarco_cprr_k75_precision.pdf    (~28 KB)
 ```
 
-The overlay figure selects queries with the largest purity improvement, for example:
+The overlay figure selects queries with the largest precision improvement, for example:
 
 | Query | Before P@20 | After P@20 | Δ |
 |-------|:-----------:|:----------:|:-:|

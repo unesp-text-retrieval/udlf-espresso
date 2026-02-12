@@ -14,7 +14,7 @@ Figures produced:
   2. **Before / after overlay**: for a handful of sampled queries the top-K
      neighbourhood is highlighted before and after re-ranking, showing how
      UDLF promotes category-coherent results.
-  3. **Category purity bar chart**: aggregated same-category proportion in
+  3. **Category precision bar chart**: aggregated same-category proportion in
      the top-K before vs. after re-ranking, broken down by query category.
 
 Usage examples:
@@ -256,7 +256,7 @@ def load_rankings_auto(gcs: GCSReader, data_txt_path: str, ranks_tsv_path: str) 
         )
 
 
-def compute_category_purity(
+def compute_category_precision(
     rankings: Dict[str, List[str]],
     top_k: int = 20,
 ) -> Dict[str, float]:
@@ -264,7 +264,7 @@ def compute_category_purity(
     For each query category, compute the average proportion of top-K docs
     that share the query's category.
 
-    Returns: {category: purity_proportion}
+    Returns: {category: precision_proportion}
     """
     cat_totals: Dict[str, List[float]] = defaultdict(list)
 
@@ -487,13 +487,13 @@ def figure_before_after_overlay(
                 ax.set_xlim(xlim)
                 ax.set_ylim(ylim)
 
-            # Purity annotation
+            # Precision annotation
             same_count = sum(
                 1 for d in ranked_docs if _extract_category(d) == q_cat
             )
-            purity = same_count / len(ranked_docs) if ranked_docs else 0
+            precision = same_count / len(ranked_docs) if ranked_docs else 0
             ax.set_title(
-                f"{label}\nPurity@{top_k} = {purity:.0%}",
+                f"{label}\nP@{top_k} = {precision:.0%}",
                 fontsize=10, fontweight="bold",
             )
             ax.set_xlabel(f"{reducer_name} 1", fontsize=8)
@@ -529,7 +529,7 @@ def figure_before_after_overlay(
     return fig
 
 
-def figure_purity_comparison(
+def figure_precision_comparison(
     before_rankings: Dict[str, List[str]],
     after_rankings: Dict[str, List[str]],
     top_k: int = 20,
@@ -538,22 +538,22 @@ def figure_purity_comparison(
     figsize: Tuple[float, float] = (10, 4.5),
 ) -> plt.Figure:
     """
-    Figure 3: two-panel purity comparison.
+    Figure 3: two-panel precision comparison.
 
     Left panel  – dumbbell chart (connected dots) with a zoomed y-axis so
                   that even small @20 improvements are clearly visible.
     Right panel – Δ% bar chart showing the absolute improvement per category,
                   making the direction and magnitude immediately obvious.
     """
-    before_purity = compute_category_purity(before_rankings, top_k)
-    after_purity = compute_category_purity(after_rankings, top_k)
+    before_prec = compute_category_precision(before_rankings, top_k)
+    after_prec = compute_category_precision(after_rankings, top_k)
 
-    cats = sorted(set(before_purity) | set(after_purity))
+    cats = sorted(set(before_prec) | set(after_prec))
     labels = [c.replace("-", " ").title() for c in cats]
     y_pos = np.arange(len(cats))
 
-    before_vals = np.array([before_purity.get(c, 0) for c in cats])
-    after_vals = np.array([after_purity.get(c, 0) for c in cats])
+    before_vals = np.array([before_prec.get(c, 0) for c in cats])
+    after_vals = np.array([after_prec.get(c, 0) for c in cats])
     deltas = after_vals - before_vals
 
     # Colours
@@ -590,7 +590,7 @@ def figure_purity_comparison(
     ax_dot.set_yticklabels(labels, fontsize=9)
     ax_dot.set_xlabel(f"Same-Category Proportion in Top-{top_k}", fontsize=10)
     ax_dot.set_title(
-        f"Category Purity@{top_k}",
+        f"Precision@{top_k}",
         fontsize=11, fontweight="bold",
     )
     ax_dot.legend(fontsize=8, loc="lower right")
@@ -615,7 +615,7 @@ def figure_purity_comparison(
     ax_delta.axvline(0, color="black", linewidth=0.8)
     ax_delta.set_yticks(y_pos)
     ax_delta.set_yticklabels([])  # shared with left panel
-    ax_delta.set_xlabel(f"Δ Purity@{top_k}", fontsize=10)
+    ax_delta.set_xlabel(f"Δ P@{top_k}", fontsize=10)
     ax_delta.set_title(
         f"Improvement after {method_label}",
         fontsize=11, fontweight="bold",
@@ -625,7 +625,7 @@ def figure_purity_comparison(
     ax_delta.invert_yaxis()
 
     fig.suptitle(
-        f"{method_label} (K={k_label}) Re-Ranking Effect on Category Purity@{top_k}",
+        f"{method_label} (K={k_label}) Re-Ranking Effect on Precision@{top_k}",
         fontsize=12, fontweight="bold",
     )
     return fig
@@ -635,8 +635,8 @@ def figure_purity_comparison(
 #  Query sampling heuristic
 # ═══════════════════════════════════════════════════════════════════════
 
-def _query_purity(qid: str, rankings: Dict[str, List[str]], top_k: int) -> float:
-    """Compute purity@top_k for a single query."""
+def _query_precision(qid: str, rankings: Dict[str, List[str]], top_k: int) -> float:
+    """Compute precision@top_k for a single query."""
     q_cat = _extract_category(qid)
     docs = rankings.get(qid, [])[:top_k]
     if not docs:
@@ -653,7 +653,7 @@ def sample_best_improvement_queries(
     candidate_qids: Optional[Set[str]] = None,
 ) -> List[str]:
     """
-    Select the queries with the largest purity@top_k improvement
+    Select the queries with the largest precision@top_k improvement
     (Δ = after − before), ensuring category diversity by picking
     at most ``n_per_category`` per category.
 
@@ -672,8 +672,8 @@ def sample_best_improvement_queries(
         # Skip queries with too few results
         if len(b_docs) < top_k or len(a_docs) < top_k:
             continue
-        p_before = _query_purity(qid, before_rankings, top_k)
-        p_after = _query_purity(qid, after_rankings, top_k)
+        p_before = _query_precision(qid, before_rankings, top_k)
+        p_after = _query_precision(qid, after_rankings, top_k)
         deltas.append((qid, p_after - p_before, p_before, p_after))
 
     # Sort by delta descending (best improvement first)
@@ -832,7 +832,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     print(f"    → {path1}")
 
     # Figure 2: before / after overlay
-    print("  ✎ Selecting queries with best purity improvement ...")
+    print("  ✎ Selecting queries with best precision improvement ...")
     sample_qs = sample_best_improvement_queries(
         before_rankings,
         after_rankings,
@@ -858,15 +858,15 @@ def main(argv: Optional[List[str]] = None) -> None:
     plt.close(fig2)
     print(f"    → {path2}")
 
-    # Figure 3: category purity comparison
-    print("  ✎ Generating purity comparison ...")
-    fig3 = figure_purity_comparison(
+    # Figure 3: category precision comparison
+    print("  ✎ Generating precision comparison ...")
+    fig3 = figure_precision_comparison(
         before_rankings, after_rankings,
         top_k=args.top_k,
         method_label=method_display,
         k_label=str(k_val),
     )
-    path3 = out_dir / f"{prefix}_purity.{ext}"
+    path3 = out_dir / f"{prefix}_precision.{ext}"
     fig3.savefig(path3, bbox_inches="tight")
     plt.close(fig3)
     print(f"    → {path3}")

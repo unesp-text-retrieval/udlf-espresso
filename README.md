@@ -256,7 +256,7 @@ python scripts/generate_manifold_figures.py \
     --dataset huffpost-news --model contriever-msmarco --method cprr --k 75
 ```
 
-Output: three PDFs per run in `outputs/paper-assets/figures/` (scatter, overlay, purity chart).
+Output: three PDFs per run in `outputs/paper-assets/figures/` (scatter, overlay, precision chart).
 
 ## Extending the Stack
 - **New retrieval models**: subclass the appropriate retriever, register a Hydra config, and append a pipeline step.
