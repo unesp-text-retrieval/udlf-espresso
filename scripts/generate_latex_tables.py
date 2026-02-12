@@ -305,7 +305,8 @@ def generate_compact_table_for_dataset(
     Build a compact LaTeX table for one dataset (paper-friendly).
 
     Only @20 metrics, one row per model showing the single best method.
-    Each metric cell inlines the value and Δ% vs. baseline.
+    Each metric cell shows baseline → rerank (+Δ%) so readers can see
+    both the original and improved values at a glance.
     """
     dataset_data = baseline_comparison.get(dataset, {})
     if not dataset_data:
@@ -321,7 +322,7 @@ def generate_compact_table_for_dataset(
         "  \\centering",
         f"  \\caption{{Best re-ranking result per model on \\textbf{{{ds_display}}} "
         "(selected by highest P@20 improvement). "
-        "Cells show re-ranked value and relative change over the retrieval baseline.}",
+        "Cells show baseline $\\to$ re-ranked value with relative change.}",
         f"  \\label{{tab:rerank-compact-{dataset}}}",
         "  \\small",
         "  \\begin{tabular}{llccc}",
@@ -365,7 +366,8 @@ def generate_compact_table_for_dataset(
             rerank_val = get_metric_value(
                 dataset_data, model, best_method, best_k_str, mk, "rerank"
             )
-            val_str = _fmt(rerank_val)
+            base_str = _fmt(base_val)
+            rerank_str = _fmt(rerank_val)
             if (
                 base_val is not None
                 and rerank_val is not None
@@ -375,11 +377,17 @@ def generate_compact_table_for_dataset(
                 sign = "+" if delta_pct > 0 else ""
                 delta_part = f"{sign}{delta_pct:.1f}\\%"
                 if delta_pct > 0:
-                    cell = f"\\textbf{{{val_str}}} {{\\scriptsize ({delta_part})}}"
+                    cell = (
+                        f"{base_str} $\\to$ \\textbf{{{rerank_str}}} "
+                        f"{{\\scriptsize ({delta_part})}}"
+                    )
                 else:
-                    cell = f"{val_str} {{\\scriptsize ({delta_part})}}"
+                    cell = (
+                        f"{base_str} $\\to$ {rerank_str} "
+                        f"{{\\scriptsize ({delta_part})}}"
+                    )
             else:
-                cell = val_str
+                cell = f"{base_str} $\\to$ {rerank_str}"
             row_cells.append(cell)
 
         lines.append("    " + " & ".join(row_cells) + " \\\\")
@@ -406,14 +414,14 @@ def generate_summary_table(
     by P@20 improvement) vs. the corresponding baseline.
     """
     # Compact layout: Dataset | Model | Method | K | MAP@20 | P@20 | Recall@20
-    # Each metric cell shows "reranked_value (Δ%)" in a single column
+    # Each metric cell shows "baseline → reranked_value (Δ%)" in a single column
     lines = [
         "% ── Summary table across all datasets ────────────────────────",
         "\\begin{table}[htbp]",
         "  \\centering",
         "  \\caption{Best re-ranking configuration per dataset (selected by "
-        "highest P@20 improvement). Each metric cell shows the re-ranked "
-        "value with relative change ($\\Delta\\%$) over the retrieval baseline.}",
+        "highest P@20 improvement). Each metric cell shows baseline "
+        "$\\to$ re-ranked value with relative change ($\\Delta\\%$).}",
         "  \\label{tab:rerank-summary}",
         "  \\small",
         "  \\begin{tabular}{llllccc}",
@@ -452,18 +460,25 @@ def generate_summary_table(
             base_val = get_baseline_value(ds_data, bm, metric_key)
             rerank_val = get_metric_value(ds_data, bm, bmethod, bk, metric_key, "rerank")
 
-            # Build a compact cell: "value (+Δ%)"
-            val_str = _fmt(rerank_val)
+            # Build a compact cell: "baseline → value (+Δ%)"
+            base_str = _fmt(base_val)
+            rerank_str = _fmt(rerank_val)
             if base_val is not None and rerank_val is not None and base_val != 0:
                 delta_pct = (rerank_val - base_val) / base_val * 100
                 sign = "+" if delta_pct > 0 else ""
                 delta_part = f"{sign}{delta_pct:.1f}\\%"
                 if delta_pct > 0:
-                    cell = f"\\textbf{{{val_str}}} {{\\scriptsize ({delta_part})}}"
+                    cell = (
+                        f"{base_str} $\\to$ \\textbf{{{rerank_str}}} "
+                        f"{{\\scriptsize ({delta_part})}}"
+                    )
                 else:
-                    cell = f"{val_str} {{\\scriptsize ({delta_part})}}"
+                    cell = (
+                        f"{base_str} $\\to$ {rerank_str} "
+                        f"{{\\scriptsize ({delta_part})}}"
+                    )
             else:
-                cell = val_str
+                cell = f"{base_str} $\\to$ {rerank_str}"
             cells.append(cell)
 
         lines.append("    " + " & ".join(cells) + " \\\\")

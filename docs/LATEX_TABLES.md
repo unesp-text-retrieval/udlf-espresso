@@ -9,7 +9,7 @@ Two layout modes are available:
 | Mode | Best for | What it shows |
 |------|----------|---------------|
 | **complete** | Dissertations, appendices | Every model × method × K combination with baseline rows and all requested cutoffs (@20, @50, @200) |
-| **compact** | Papers (space-constrained) | One row per model showing only the single best method at @20, with inline Δ% vs. baseline |
+| **compact** | Papers (space-constrained) | One row per model showing only the single best method at @20, with baseline → rerank and inline Δ% |
 
 Both modes also emit a **cross-dataset summary table** that picks the single best (model, method, K) per dataset.
 
@@ -115,21 +115,22 @@ Models are separated by `\midrule` horizontal rules.
 **Columns**: `Model | Method (K) | MAP@20 | P@20 | Recall@20`
 
 **Rows** (one per model): select the single best method across all three UDLF methods (again by highest `precision@20.improvement_pct`). Each metric cell shows:
-- The re-ranked value
-- Inline `(+Δ%)` relative to baseline
-- **Bold** if positive improvement
+- The baseline value
+- `→` arrow
+- The re-ranked value (with inline `(+Δ%)` relative to baseline)
+- **Bold** on the re-ranked value if positive improvement
 
 ### Step 3 — Summary Table (cross-dataset)
 
 **Columns**: `Dataset | Model | Method | K | MAP@20 | P@20 | Recall@20`
 
-**Rows** (one per dataset): for each dataset, find the globally best `(model, method, K)` triple by `precision@20.improvement_pct`. Show the re-ranked value with inline Δ%.
+**Rows** (one per dataset): for each dataset, find the globally best `(model, method, K)` triple by `precision@20.improvement_pct`. Show baseline → re-ranked value with inline Δ%.
 
 ### Step 4 — LaTeX Formatting
 
 - Numbers are formatted to 4 decimal places (`%.4f`).
 - Improved values are wrapped in `\textbf{}`.
-- Compact mode wraps Δ% in `{\scriptsize (+X.Y\%)}`.
+- Compact and summary mode format each metric cell as `baseline $\to$ \textbf{rerank} {\scriptsize (+X.Y\%)}`.
 - Special characters in model/dataset names are escaped (`_` → `\_`).
 - Tables use `booktabs` (`\toprule`, `\midrule`, `\bottomrule`).
 
@@ -186,14 +187,15 @@ Reviewers want a quick answer: "across all datasets, does UDLF re-ranking help?"
 \begin{table}[htbp]
   \centering
   \caption{Best re-ranking result per model on \textbf{BBC-News}
-           (selected by highest P@20 improvement).}
+           (selected by highest P@20 improvement).
+           Cells show baseline $\to$ re-ranked value with relative change.}
   \label{tab:rerank-compact-bbc-news}
   \small
   \begin{tabular}{llccc}
     \toprule
     Model & Method ($K$) & MAP@20 & P@20 & Recall@20 \\
     \midrule
-    BM25 & CPRR (75) & \textbf{0.4567} {\scriptsize (+33.5\%)} & ... \\
+    BM25 & CPRR (75) & 0.3421 $\to$ \textbf{0.4567} {\scriptsize (+33.5\%)} & ... \\
     MiniLM & RDPAC (50) & ... \\
     BGE & CPRR (75) & ... \\
     Contriever & CPRR (75) & ... \\
