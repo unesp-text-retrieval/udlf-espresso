@@ -9,7 +9,7 @@ Two layout modes are available:
 | Mode | Best for | What it shows |
 |------|----------|---------------|
 | **complete** | Dissertations, appendices | Every model × method × K combination with baseline rows and all requested cutoffs (@20, @50, @200) |
-| **compact** | Papers (space-constrained) | One row per model showing only the single best method at @20, with baseline → rerank and inline Δ% |
+| **compact** | Papers (space-constrained) | One baseline row + one best-method row per model at @20, with inline Δ% on the rerank values |
 
 Both modes also emit a **cross-dataset summary table** that picks the single best (model, method, K) per dataset.
 
@@ -112,25 +112,23 @@ Models are separated by `\midrule` horizontal rules.
 
 ### Step 2b — Compact Table (one per dataset)
 
-**Columns**: `Model | Method (K) | MAP@20 | P@20 | Recall@20`
+**Columns**: `Method | MAP@20 | P@20 | Recall@20`
 
-**Rows** (one per model): select the single best method across all three UDLF methods (again by highest `precision@20.improvement_pct`). Each metric cell shows:
-- The baseline value
-- `→` arrow
-- The re-ranked value (with inline `(+Δ%)` relative to baseline)
-- **Bold** on the re-ranked value if positive improvement
+**Rows** (two per model): select the single best method across all three UDLF methods (again by highest `precision@20.improvement_pct`). For each model:
+1. **Baseline row** — `"<Model> (base)"`: shows the `baseline` value for each metric.
+2. **Re-ranking row** — `"  + <Method> (K=<best_K>)"`: shows the `rerank` value, **bold** if improved, with inline `{\scriptsize (+Δ%)}` suffix.
 
 ### Step 3 — Summary Table (cross-dataset)
 
-**Columns**: `Dataset | Model | Method | K | MAP@20 | P@20 | Recall@20`
+**Columns**: `Dataset | Model | Method (K) | MAP@20 | P@20 | Recall@20`
 
-**Rows** (one per dataset): for each dataset, find the globally best `(model, method, K)` triple by `precision@20.improvement_pct`. Show baseline → re-ranked value with inline Δ%.
+**Rows** (two per dataset): for each dataset, find the globally best `(model, method, K)` triple by `precision@20.improvement_pct`. Show a baseline row then a re-ranking row with inline Δ%.
 
 ### Step 4 — LaTeX Formatting
 
 - Numbers are formatted to 4 decimal places (`%.4f`).
 - Improved values are wrapped in `\textbf{}`.
-- Compact and summary mode format each metric cell as `baseline $\to$ \textbf{rerank} {\scriptsize (+X.Y\%)}`.
+- Compact and summary mode show inline Δ% via `{\scriptsize (+X.Y\%)}` on re-ranking rows.
 - Special characters in model/dataset names are escaped (`_` → `\_`).
 - Tables use `booktabs` (`\toprule`, `\midrule`, `\bottomrule`).
 
@@ -188,17 +186,18 @@ Reviewers want a quick answer: "across all datasets, does UDLF re-ranking help?"
   \centering
   \caption{Best re-ranking result per model on \textbf{BBC-News}
            (selected by highest P@20 improvement).
-           Cells show baseline $\to$ re-ranked value with relative change.}
+           Bold values indicate improvement over the retrieval baseline.}
   \label{tab:rerank-compact-bbc-news}
   \small
-  \begin{tabular}{llccc}
+  \begin{tabular}{lccc}
     \toprule
-    Model & Method ($K$) & MAP@20 & P@20 & Recall@20 \\
+    Method & MAP@20 & P@20 & Recall@20 \\
     \midrule
-    BM25 & CPRR (75) & 0.3421 $\to$ \textbf{0.4567} {\scriptsize (+33.5\%)} & ... \\
-    MiniLM & RDPAC (50) & ... \\
-    BGE & CPRR (75) & ... \\
-    Contriever & CPRR (75) & ... \\
+    BM25 (base) & 0.3421 & 0.3421 & 0.3421 \\
+    \quad + CPRR ($K$=75) & \textbf{0.4567} {\scriptsize (+33.5\%)} & ... \\
+    \midrule
+    MiniLM (base) & 0.2345 & 0.2345 & 0.2345 \\
+    \quad + RDPAC ($K$=50) & \textbf{0.3456} {\scriptsize (+47.4\%)} & ... \\
     \bottomrule
   \end{tabular}
 \end{table}

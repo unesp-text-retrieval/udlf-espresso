@@ -304,9 +304,9 @@ def generate_compact_table_for_dataset(
     """
     Build a compact LaTeX table for one dataset (paper-friendly).
 
-    Only @20 metrics, one row per model showing the single best method.
-    Each metric cell shows baseline → rerank (+Δ%) so readers can see
-    both the original and improved values at a glance.
+    Only @20 metrics. For each model: a baseline row followed by a single
+    best-method row with Δ% inline. This keeps each cell to one number,
+    avoiding wide columns.
     """
     dataset_data = baseline_comparison.get(dataset, {})
     if not dataset_data:
@@ -322,12 +322,12 @@ def generate_compact_table_for_dataset(
         "  \\centering",
         f"  \\caption{{Best re-ranking result per model on \\textbf{{{ds_display}}} "
         "(selected by highest P@20 improvement). "
-        "Cells show baseline $\\to$ re-ranked value with relative change.}",
+        "Bold values indicate improvement over the retrieval baseline.}",
         f"  \\label{{tab:rerank-compact-{dataset}}}",
         "  \\small",
-        "  \\begin{tabular}{llccc}",
+        "  \\begin{tabular}{lccc}",
         "    \\toprule",
-        "    Model & Method ($K$) & " + " & ".join(metric_headers) + " \\\\",
+        "    Method & " + " & ".join(metric_headers) + " \\\\",
         "    \\midrule",
     ]
 
@@ -355,19 +355,29 @@ def generate_compact_table_for_dataset(
         if best_method is None or best_k_str is None:
             continue
 
+        # --- Baseline row ---
+        baseline_cells = [f"{_escape_latex(model_label)} (base)"]
+        for mk in metric_keys:
+            base_val = get_baseline_value(dataset_data, model, mk)
+            baseline_cells.append(_fmt(base_val))
+        lines.append("    " + " & ".join(baseline_cells) + " \\\\")
+
+        # --- Best re-ranking row with inline Δ% ---
         method_label = METHOD_DISPLAY.get(best_method, best_method.upper())
-        row_cells = [
-            _escape_latex(model_label),
-            f"{method_label} ({best_k_str})",
-        ]
+        rerank_cells = [f"\\quad + {method_label} ($K$={best_k_str})"]
 
         for mk in metric_keys:
             base_val = get_baseline_value(dataset_data, model, mk)
             rerank_val = get_metric_value(
                 dataset_data, model, best_method, best_k_str, mk, "rerank"
             )
-            base_str = _fmt(base_val)
-            rerank_str = _fmt(rerank_val)
+            improved = (
+                rerank_val is not None
+                and base_val is not None
+                and rerank_val > base_val
+            )
+            val_str = _fmt(rerank_val, bold=improved)
+            # Append inline Δ%
             if (
                 base_val is not None
                 and rerank_val is not None
@@ -375,22 +385,15 @@ def generate_compact_table_for_dataset(
             ):
                 delta_pct = (rerank_val - base_val) / base_val * 100
                 sign = "+" if delta_pct > 0 else ""
-                delta_part = f"{sign}{delta_pct:.1f}\\%"
-                if delta_pct > 0:
-                    cell = (
-                        f"{base_str} $\\to$ \\textbf{{{rerank_str}}} "
-                        f"{{\\scriptsize ({delta_part})}}"
-                    )
-                else:
-                    cell = (
-                        f"{base_str} $\\to$ {rerank_str} "
-                        f"{{\\scriptsize ({delta_part})}}"
-                    )
-            else:
-                cell = f"{base_str} $\\to$ {rerank_str}"
-            row_cells.append(cell)
+                val_str += f" {{\\scriptsize ({sign}{delta_pct:.1f}\\%)}}"
+            rerank_cells.append(val_str)
 
-        lines.append("    " + " & ".join(row_cells) + " \\\\")
+        lines.append("    " + " & ".join(rerank_cells) + " \\\\")
+        lines.append("    \\midrule")
+
+    # Remove trailing midrule
+    if lines and lines[-1].strip() == "\\midrule":
+        lines.pop()
 
     lines += [
         "    \\bottomrule",
@@ -410,23 +413,21 @@ def generate_summary_table(
     """
     Build a single summary table across all datasets.
 
-    For each dataset, show the best overall re-ranking result (best model+method+K
-    by P@20 improvement) vs. the corresponding baseline.
+    For each dataset, show baseline row + best re-ranking row (best
+    model+method+K by P@20 improvement) with inline Δ%.
     """
-    # Compact layout: Dataset | Model | Method | K | MAP@20 | P@20 | Recall@20
-    # Each metric cell shows "baseline → reranked_value (Δ%)" in a single column
     lines = [
         "% ── Summary table across all datasets ────────────────────────",
         "\\begin{table}[htbp]",
         "  \\centering",
         "  \\caption{Best re-ranking configuration per dataset (selected by "
-        "highest P@20 improvement). Each metric cell shows baseline "
-        "$\\to$ re-ranked value with relative change ($\\Delta\\%$).}",
+        "highest P@20 improvement). Bold values indicate improvement "
+        "over the retrieval baseline.}",
         "  \\label{tab:rerank-summary}",
         "  \\small",
-        "  \\begin{tabular}{llllccc}",
+        "  \\begin{tabular}{lllccc}",
         "    \\toprule",
-        "    Dataset & Model & Method & $K$ & MAP@20 & P@20 & Recall@20 \\\\",
+        "    Dataset & Model & Method ($K$) & MAP@20 & P@20 & Recall@20 \\\\",
         "    \\midrule",
     ]
 
@@ -454,34 +455,35 @@ def generate_summary_table(
         model_display = MODEL_DISPLAY.get(bm, bm)
         method_display = METHOD_DISPLAY.get(bmethod, bmethod.upper())
 
-        cells = [_escape_latex(ds_display), _escape_latex(model_display), method_display, bk]
+        # --- Baseline row ---
+        base_cells = [_escape_latex(ds_display), _escape_latex(model_display), "(base)"]
+        for metric_key in ["map@20", "precision@20", "recall@20"]:
+            base_val = get_baseline_value(ds_data, bm, metric_key)
+            base_cells.append(_fmt(base_val))
+        lines.append("    " + " & ".join(base_cells) + " \\\\")
 
+        # --- Best re-ranking row with inline Δ% ---
+        rerank_cells = ["", "", f"{method_display} ({bk})"]
         for metric_key in ["map@20", "precision@20", "recall@20"]:
             base_val = get_baseline_value(ds_data, bm, metric_key)
             rerank_val = get_metric_value(ds_data, bm, bmethod, bk, metric_key, "rerank")
-
-            # Build a compact cell: "baseline → value (+Δ%)"
-            base_str = _fmt(base_val)
-            rerank_str = _fmt(rerank_val)
+            improved = (
+                rerank_val is not None
+                and base_val is not None
+                and rerank_val > base_val
+            )
+            val_str = _fmt(rerank_val, bold=improved)
             if base_val is not None and rerank_val is not None and base_val != 0:
                 delta_pct = (rerank_val - base_val) / base_val * 100
                 sign = "+" if delta_pct > 0 else ""
-                delta_part = f"{sign}{delta_pct:.1f}\\%"
-                if delta_pct > 0:
-                    cell = (
-                        f"{base_str} $\\to$ \\textbf{{{rerank_str}}} "
-                        f"{{\\scriptsize ({delta_part})}}"
-                    )
-                else:
-                    cell = (
-                        f"{base_str} $\\to$ {rerank_str} "
-                        f"{{\\scriptsize ({delta_part})}}"
-                    )
-            else:
-                cell = f"{base_str} $\\to$ {rerank_str}"
-            cells.append(cell)
+                val_str += f" {{\\scriptsize ({sign}{delta_pct:.1f}\\%)}}"
+            rerank_cells.append(val_str)
+        lines.append("    " + " & ".join(rerank_cells) + " \\\\")
+        lines.append("    \\midrule")
 
-        lines.append("    " + " & ".join(cells) + " \\\\")
+    # Remove trailing midrule
+    if lines and lines[-1].strip() == "\\midrule":
+        lines.pop()
 
     lines += [
         "    \\bottomrule",
