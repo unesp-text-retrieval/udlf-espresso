@@ -13,6 +13,7 @@ For every dataset the script:
 Usage:
     python scripts/generate_latex_tables.py
     python scripts/generate_latex_tables.py --mode compact      # paper-friendly small tables
+    python scripts/generate_latex_tables.py --mode paper        # single-page all-datasets table
     python scripts/generate_latex_tables.py --mode complete      # full per-model detail (dissertation)
     python scripts/generate_latex_tables.py --data scripts/experiment_progress_data.json
     python scripts/generate_latex_tables.py --cutoffs 20 200
@@ -25,6 +26,8 @@ Modes:
     compact   – One table per dataset with only @20, one row per model showing
                the single best re-ranking method, values include Δ% inline
                (great for space-constrained papers).
+    paper     – A single unified table spanning all datasets on one page,
+               one row per (dataset, model) with the best method and Δ%.
 
 The generated .tex file can be \\input{} directly from a LaTeX article.
 """
@@ -494,6 +497,122 @@ def generate_summary_table(
     return "\n".join(lines)
 
 
+def generate_paper_table(
+    baseline_comparison: Dict,
+    datasets: List[str],
+    models: List[str],
+    methods: List[str],
+) -> str:
+    """
+    Build a single-page unified table with ALL results across every dataset.
+
+    Layout (one row per dataset × model, best method only):
+        Dataset | Model | Method (K) | MAP@20 | P@20 | Recall@20
+
+    Each metric cell shows the re-ranked value with inline Δ%.
+    Datasets are separated by \\midrule.  Uses \\footnotesize and tight
+    column spacing to fit ~35 rows on one page.
+    """
+    metric_keys = ["map@20", "precision@20", "recall@20"]
+
+    lines = [
+        "% ── Single-page unified table (paper mode) ──────────────────",
+        "\\begin{table*}[htbp]",
+        "  \\centering",
+        "  \\caption{Re-ranking effectiveness across all datasets. "
+        "For each model the single best UDLF method and $K$ are selected "
+        "by highest P@20 improvement. "
+        "Bold indicates improvement over the retrieval baseline.}",
+        "  \\label{tab:rerank-all}",
+        "  \\footnotesize",
+        "  \\setlength{\\tabcolsep}{4pt}",
+        "  \\begin{tabular}{ll l ccc}",
+        "    \\toprule",
+        "    Dataset & Model & Method ($K$) & MAP@20 & P@20 & Recall@20 \\\\",
+        "    \\midrule",
+    ]
+
+    for ds_idx, dataset in enumerate(datasets):
+        ds_data = baseline_comparison.get(dataset, {})
+        if not ds_data:
+            continue
+
+        ds_display = DATASET_DISPLAY.get(dataset, dataset)
+        first_model_in_ds = True
+
+        for model in models:
+            if model not in ds_data:
+                continue
+
+            model_label = MODEL_DISPLAY.get(model, model)
+
+            # Find single best method for this model
+            best_method: Optional[str] = None
+            best_k_str: Optional[str] = None
+            best_improvement = -float("inf")
+
+            for method in methods:
+                result = find_best_k(ds_data, model, method)
+                if result is None:
+                    continue
+                k_str, improvement = result
+                if improvement > best_improvement:
+                    best_improvement = improvement
+                    best_method = method
+                    best_k_str = k_str
+
+            if best_method is None or best_k_str is None:
+                continue
+
+            method_label = METHOD_DISPLAY.get(best_method, best_method.upper())
+
+            # Only print dataset name on the first row of each group
+            ds_cell = _escape_latex(ds_display) if first_model_in_ds else ""
+            first_model_in_ds = False
+
+            row_cells = [
+                ds_cell,
+                _escape_latex(model_label),
+                f"{method_label} ({best_k_str})",
+            ]
+
+            for mk in metric_keys:
+                base_val = get_baseline_value(ds_data, model, mk)
+                rerank_val = get_metric_value(
+                    ds_data, model, best_method, best_k_str, mk, "rerank"
+                )
+                improved = (
+                    rerank_val is not None
+                    and base_val is not None
+                    and rerank_val > base_val
+                )
+                val_str = _fmt(rerank_val, bold=improved)
+                # Append inline Δ%
+                if (
+                    base_val is not None
+                    and rerank_val is not None
+                    and base_val != 0
+                ):
+                    delta_pct = (rerank_val - base_val) / base_val * 100
+                    sign = "+" if delta_pct > 0 else ""
+                    val_str += f" {{\\scriptsize ({sign}{delta_pct:.1f}\\%)}}"
+                row_cells.append(val_str)
+
+            lines.append("    " + " & ".join(row_cells) + " \\\\")
+
+        # Separator between dataset groups (except after last)
+        if ds_idx < len(datasets) - 1:
+            lines.append("    \\midrule")
+
+    lines += [
+        "    \\bottomrule",
+        "  \\end{tabular}",
+        "\\end{table*}",
+        "",
+    ]
+    return "\n".join(lines)
+
+
 # ── CLI ─────────────────────────────────────────────────────────────────────
 
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
@@ -536,10 +655,11 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["complete", "compact"],
+        choices=["complete", "compact", "paper"],
         default="complete",
         help="Table layout mode: 'complete' shows all models × methods with baselines "
-        "(dissertation); 'compact' shows one best row per model with Δ%% inline (paper). "
+        "(dissertation); 'compact' shows one best row per model with Δ%%%% inline; "
+        "'paper' generates a single unified table across all datasets (article). "
         "Default: complete",
     )
     return parser.parse_args(argv)
@@ -584,23 +704,31 @@ def main(argv: Optional[List[str]] = None) -> None:
         "",
     ]
 
-    for dataset in datasets:
-        if args.mode == "compact":
-            table = generate_compact_table_for_dataset(
-                dataset, baseline_comparison, models, methods
-            )
-        else:
-            table = generate_table_for_dataset(
-                dataset, baseline_comparison, models, methods, cutoffs
-            )
-        parts.append(table)
-
-    if not args.no_summary:
+    if args.mode == "paper":
+        # Single unified table — no per-dataset loop, no summary
         parts.append(
-            generate_summary_table(
+            generate_paper_table(
                 baseline_comparison, datasets, models, methods
             )
         )
+    else:
+        for dataset in datasets:
+            if args.mode == "compact":
+                table = generate_compact_table_for_dataset(
+                    dataset, baseline_comparison, models, methods
+                )
+            else:
+                table = generate_table_for_dataset(
+                    dataset, baseline_comparison, models, methods, cutoffs
+                )
+            parts.append(table)
+
+        if not args.no_summary:
+            parts.append(
+                generate_summary_table(
+                    baseline_comparison, datasets, models, methods
+                )
+            )
 
     output_text = "\n".join(parts)
 

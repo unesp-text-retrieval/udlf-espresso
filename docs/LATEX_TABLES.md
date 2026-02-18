@@ -10,8 +10,9 @@ Two layout modes are available:
 |------|----------|---------------|
 | **complete** | Dissertations, appendices | Every model × method × K combination with baseline rows and all requested cutoffs (@20, @50, @200) |
 | **compact** | Papers (space-constrained) | One baseline row + one best-method row per model at @20, with inline Δ% on the rerank values |
+| **paper** | 12-page articles | A single unified table spanning all datasets on one page, one row per (dataset, model) with Δ% |
 
-Both modes also emit a **cross-dataset summary table** that picks the single best (model, method, K) per dataset.
+Both `complete` and `compact` modes also emit a **cross-dataset summary table** that picks the single best (model, method, K) per dataset. `paper` mode is self-contained.
 
 ## Quick Start
 
@@ -23,6 +24,9 @@ python scripts/generate_latex_tables.py
 
 # Compact mode for a paper (only @20)
 python scripts/generate_latex_tables.py --mode compact
+
+# Single-page table with all datasets (article)
+python scripts/generate_latex_tables.py --mode paper
 
 # Specific cutoffs and datasets
 python scripts/generate_latex_tables.py --cutoffs 20 50 --datasets bbc-news mental-health scifact
@@ -41,7 +45,7 @@ Output `.tex` file lands in `outputs/paper-assets/latex_rerank_tables.tex` by de
 | `--output` | `outputs/paper-assets/latex_rerank_tables.tex` | Output `.tex` file |
 | `--datasets` | all in data | Subset of datasets to include |
 | `--cutoffs` | `20 50 200` | Cutoff values for column groups (complete mode) |
-| `--mode` | `complete` | `complete` or `compact` |
+| `--mode` | `complete` | `complete`, `compact`, or `paper` |
 | `--no-summary` | false | Skip the cross-dataset summary table |
 
 ---
@@ -142,8 +146,8 @@ Precision@20 directly measures the proportion of relevant documents in the user-
 ### Why bold improved values?
 In a table with 30+ cells, readers need to instantly see *where* re-ranking helped. Bold values create a visual pattern — readers can scan the table and immediately grasp that most cells improved (many bolds) or that improvements are selective (few bolds).
 
-### Why two modes?
-A dissertation can afford a full page per dataset showing every model × method combination. A 12-page paper cannot. Compact mode reduces each dataset to ~5 rows while preserving the key insight: "for each retrieval model, this UDLF method at this K improved P@20 by this much."
+### Why three modes?
+A dissertation can afford a full page per dataset showing every model × method combination. A 12-page paper cannot. Compact mode reduces each dataset to ~8 rows but still produces 9+ tables. Paper mode condenses everything into a single `table*` spanning the full page width, with ~35 rows (one per dataset×model), `\footnotesize`, and tight `\tabcolsep` so it fits on one page.
 
 ### Why include a summary table?
 Reviewers want a quick answer: "across all datasets, does UDLF re-ranking help?" The summary table answers this in one glance — one row per dataset, the single best configuration, all three metrics with Δ%.
@@ -201,6 +205,32 @@ Reviewers want a quick answer: "across all datasets, does UDLF re-ranking help?"
     \bottomrule
   \end{tabular}
 \end{table}
+```
+
+### Paper Mode
+
+```latex
+\begin{table*}[htbp]
+  \centering
+  \caption{Re-ranking effectiveness across all datasets. For each model
+           the single best UDLF method and $K$ are selected by highest
+           P@20 improvement. Bold indicates improvement over the
+           retrieval baseline.}
+  \label{tab:rerank-all}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{ll l ccc}
+    \toprule
+    Dataset & Model & Method ($K$) & MAP@20 & P@20 & Recall@20 \\
+    \midrule
+    ArguAna & BM25 & RDPAC (30) & \textbf{0.2857} {\scriptsize (+30.4\%)} & ... \\
+     & MiniLM & CPRR (1) & ... \\
+    \midrule
+    SciFact & BM25 & BFS-TREE (20) & ... \\
+    ...
+    \bottomrule
+  \end{tabular}
+\end{table*}
 ```
 
 ---
