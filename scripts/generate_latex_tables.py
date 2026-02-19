@@ -14,6 +14,7 @@ Usage:
     python scripts/generate_latex_tables.py
     python scripts/generate_latex_tables.py --mode compact      # paper-friendly small tables
     python scripts/generate_latex_tables.py --mode paper        # single-page all-datasets table
+    python scripts/generate_latex_tables.py --mode dataset-summary  # dataset overview table
     python scripts/generate_latex_tables.py --mode complete      # full per-model detail (dissertation)
     python scripts/generate_latex_tables.py --data scripts/experiment_progress_data.json
     python scripts/generate_latex_tables.py --cutoffs 20 200
@@ -28,6 +29,8 @@ Modes:
                (great for space-constrained papers).
     paper     – A single unified table spanning all datasets on one page,
                one row per (dataset, model) with the best method and Δ%.
+    dataset-summary – Overview table listing all datasets with #Docs, #Queries,
+               Avg Rel/Q, evaluation type, and domain.
 
 The generated .tex file can be \\input{} directly from a LaTeX article.
 """
@@ -77,6 +80,74 @@ METRIC_FAMILY_DISPLAY = {
     "map": "MAP",
     "precision": "P",
     "recall": "Recall",
+}
+
+
+# ── Dataset metadata (static, computed from GCS category_metadata.json) ─────
+# For category-based datasets: Avg Rel/Q = Σ_c [ n_c × (n_c − 1) ] / N
+# where n_c is the number of documents in category c and N is total docs.
+# This counts, for each query (= every document), how many other docs share
+# its category (excluding itself), averaged over all queries.
+#
+# BEIR Avg Rel/Q values come from the official BEIR benchmark qrels.
+
+DATASET_INFO: Dict[str, Dict[str, Any]] = {
+    # --- BEIR datasets (qrels-based) ---
+    # Distribution computed from actual qrels files on GCS.
+    "arguana": {
+        "docs": 8674, "queries": 1406, "avg_rel_q": 1.0,
+        "eval_type": "Qrels", "domain": "Argumentation",
+        "dist": {"mean": 1.0, "std": 0.0, "min": 1, "p25": 1, "median": 1, "p75": 1, "p90": 1, "p95": 1, "max": 1},
+    },
+    "scifact": {
+        "docs": 5183, "queries": 300, "avg_rel_q": 1.1,
+        "eval_type": "Qrels", "domain": "Scientific Claims",
+        "dist": {"mean": 1.1, "std": 0.5, "min": 1, "p25": 1, "median": 1, "p75": 1, "p90": 1, "p95": 2, "max": 5},
+    },
+    "nfcorpus": {
+        "docs": 3633, "queries": 323, "avg_rel_q": 38.2,
+        "eval_type": "Qrels", "domain": "Biomedical",
+        "dist": {"mean": 38.2, "std": 71.7, "min": 1, "p25": 5, "median": 16, "p75": 39, "p90": 71, "p95": 158, "max": 475},
+    },
+    "scidocs": {
+        "docs": 25657, "queries": 1000, "avg_rel_q": 4.9,
+        "eval_type": "Qrels", "domain": "Scientific Docs",
+        "dist": {"mean": 4.9, "std": 0.3, "min": 2, "p25": 5, "median": 5, "p75": 5, "p90": 5, "p95": 5, "max": 5},
+    },
+    "fiqa": {
+        "docs": 57638, "queries": 648, "avg_rel_q": 2.6,
+        "eval_type": "Qrels", "domain": "Finance",
+        "dist": {"mean": 2.6, "std": 2.1, "min": 1, "p25": 1, "median": 2, "p75": 3, "p90": 5, "p95": 7, "max": 15},
+    },
+    # --- Category-based datasets ---
+    # Avg Rel/Q computed from category_metadata.json on GCS.
+    # Each document acts as a query; relevant = same-category docs (excl. itself).
+    # Distribution percentiles are weighted by category size:
+    # a category of size n contributes n queries each with Rel/Q = n − 1.
+    "bbc-news": {
+        "docs": 2225, "queries": 2225, "avg_rel_q": 450.6,
+        "eval_type": "Category", "n_categories": 5, "domain": "News",
+        "category_based": True,
+        "dist": {"mean": 450.6, "std": 55.0, "min": 385, "p25": 400, "median": 416, "p75": 509, "p90": 510, "p95": 510, "max": 510},
+    },
+    "wos": {
+        "docs": 46985, "queries": 46985, "avg_rel_q": 389.0,
+        "eval_type": "Category", "n_categories": 134, "domain": "Academic",
+        "category_based": True,
+        "dist": {"mean": 389.0, "std": 119.5, "min": 0, "p25": 338, "median": 383, "p75": 417, "p90": 551, "p95": 651, "max": 749},
+    },
+    "huffpost-news": {
+        "docs": 32730, "queries": 32730, "avg_rel_q": 2044.0,
+        "eval_type": "Category", "n_categories": 42, "domain": "News",
+        "category_based": True,
+        "dist": {"mean": 2044.0, "std": 1865.3, "min": 124, "p25": 618, "median": 1744, "p75": 3539, "p90": 5593, "p95": 5593, "max": 5593},
+    },
+    "mental-health": {
+        "docs": 20353, "queries": 20353, "avg_rel_q": 5593.8,
+        "eval_type": "Category", "n_categories": 4, "domain": "Health Forums",
+        "category_based": True,
+        "dist": {"mean": 5593.8, "std": 1386.8, "min": 2581, "p25": 5264, "median": 5451, "p75": 7053, "p90": 7053, "p95": 7053, "max": 7053},
+    },
 }
 
 
@@ -506,29 +577,37 @@ def generate_paper_table(
     """
     Build a single-page unified table with ALL results across every dataset.
 
-    Layout (one row per dataset × model, best method only):
-        Dataset | Model | Method (K) | MAP@20 | P@20 | Recall@20
+    Layout – two column groups (Baseline / Re-ranked) with one row per
+    dataset × model (best method only):
 
-    Each metric cell shows the re-ranked value with inline Δ%.
-    Datasets are separated by \\midrule.  Uses \\footnotesize and tight
-    column spacing to fit ~35 rows on one page.
+        Dataset | Model | Method (K) | MAP | P@20 | Recall | MAP | P@20 | Recall
+                                       ─── Baseline ───   ─── Re-ranked (Δ%) ───
+
+    Datasets are separated by \\midrule.  Uses \\scriptsize and tight
+    column spacing to fit on one page.
     """
     metric_keys = ["map@20", "precision@20", "recall@20"]
+    metric_short = ["MAP", "P@20", "Recall"]
 
     lines = [
         "% ── Single-page unified table (paper mode) ──────────────────",
-        "\\begin{table*}[htbp]",
-        "  \\centering",
-        "  \\caption{Re-ranking effectiveness across all datasets. "
-        "For each model the single best UDLF method and $K$ are selected "
-        "by highest P@20 improvement. "
-        "Bold indicates improvement over the retrieval baseline.}",
-        "  \\label{tab:rerank-all}",
-        "  \\footnotesize",
-        "  \\setlength{\\tabcolsep}{4pt}",
-        "  \\begin{tabular}{ll l ccc}",
+        "% Requires: \\usepackage{booktabs}, \\usepackage{caption}, \\usepackage{graphicx}",
+        "\\begingroup",
+        "\\renewcommand{\\arraystretch}{0.95}",
+        "\\captionof{table}{Re-ranking effectiveness across all datasets. "
+        "For each retrieval model the single best UDLF method and $K$ are "
+        "selected by highest P@20 improvement.}",
+        "\\label{tab:rerank-all}",
+        "\\resizebox{\\textwidth}{!}{",
+        "\\begin{tabular}{ll l ccc ccc}",
         "    \\toprule",
-        "    Dataset & Model & Method ($K$) & MAP@20 & P@20 & Recall@20 \\\\",
+        "    & & & \\multicolumn{3}{c}{Baseline}"
+        " & \\multicolumn{3}{c}{Re-ranked ($\\Delta\\%$)} \\\\",
+        "    \\cmidrule(lr){4-6} \\cmidrule(lr){7-9}",
+        "    Dataset & Model & Method ($K$)"
+        + "".join(f" & {m}" for m in metric_short)
+        + "".join(f" & {m}" for m in metric_short)
+        + " \\\\",
         "    \\midrule",
     ]
 
@@ -538,8 +617,9 @@ def generate_paper_table(
             continue
 
         ds_display = DATASET_DISPLAY.get(dataset, dataset)
-        first_model_in_ds = True
 
+        # ── First pass: collect row data per model and track P@20 Δ% ──
+        model_rows: list = []  # list of (model, method_label, k_str, base_vals, p20_delta)
         for model in models:
             if model not in ds_data:
                 continue
@@ -566,18 +646,56 @@ def generate_paper_table(
 
             method_label = METHOD_DISPLAY.get(best_method, best_method.upper())
 
-            # Only print dataset name on the first row of each group
+            # Collect baseline values
+            base_vals: list = []
+            for mk in metric_keys:
+                bv = get_baseline_value(ds_data, model, mk)
+                base_vals.append(bv)
+
+            # Compute P@20 Δ%
+            p20_base = get_baseline_value(ds_data, model, "precision@20")
+            p20_rerank = get_metric_value(
+                ds_data, model, best_method, best_k_str, "precision@20", "rerank"
+            )
+            p20_delta = (
+                (p20_rerank - p20_base) / p20_base * 100
+                if p20_base and p20_rerank and p20_base != 0
+                else -float("inf")
+            )
+
+            model_rows.append(
+                (model, model_label, method_label, best_method, best_k_str, base_vals, p20_delta)
+            )
+
+        if not model_rows:
+            continue
+
+        # Find max P@20 Δ% across models in this dataset
+        best_p20_delta = max(r[6] for r in model_rows)
+
+        # ── Second pass: emit rows, adding † to the best P@20 model ──
+        first_model_in_ds = True
+        for model, model_label, method_label, best_method, best_k_str, base_vals, p20_delta in model_rows:
             ds_cell = _escape_latex(ds_display) if first_model_in_ds else ""
             first_model_in_ds = False
 
+            # Mark best P@20 improvement with †
+            dagger = "$^{\\dagger}$" if p20_delta == best_p20_delta else ""
+
+            # --- Single row: info | baseline cols | re-ranked cols ---
             row_cells = [
                 ds_cell,
-                _escape_latex(model_label),
+                _escape_latex(model_label) + dagger,
                 f"{method_label} ({best_k_str})",
             ]
 
-            for mk in metric_keys:
-                base_val = get_baseline_value(ds_data, model, mk)
+            # Baseline columns
+            for bv in base_vals:
+                row_cells.append(_fmt(bv))
+
+            # Re-ranked columns with inline Δ%
+            for i, mk in enumerate(metric_keys):
+                base_val = base_vals[i]
                 rerank_val = get_metric_value(
                     ds_data, model, best_method, best_k_str, mk, "rerank"
                 )
@@ -587,7 +705,6 @@ def generate_paper_table(
                     and rerank_val > base_val
                 )
                 val_str = _fmt(rerank_val, bold=improved)
-                # Append inline Δ%
                 if (
                     base_val is not None
                     and rerank_val is not None
@@ -595,7 +712,9 @@ def generate_paper_table(
                 ):
                     delta_pct = (rerank_val - base_val) / base_val * 100
                     sign = "+" if delta_pct > 0 else ""
-                    val_str += f" {{\\scriptsize ({sign}{delta_pct:.1f}\\%)}}"
+                    val_str += (
+                        f" {{\\scriptsize ({sign}{delta_pct:.1f}\\%)}}"
+                    )
                 row_cells.append(val_str)
 
             lines.append("    " + " & ".join(row_cells) + " \\\\")
@@ -606,8 +725,212 @@ def generate_paper_table(
 
     lines += [
         "    \\bottomrule",
+        "\\end{tabular}",
+        "}% end resizebox",
+        "\\par\\smallskip",
+        "\\parbox{\\textwidth}{\\scriptsize",
+        "\\textbf{Bold} = improvement over baseline. "
+        "$^{\\dagger}$ = highest P@20 relative gain per dataset. "
+        "$\\Delta\\%$ = relative change from baseline.}",
+        "\\endgroup",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def generate_distribution_table(datasets: List[str]) -> str:
+    """
+    Build a LaTeX table showing the Rel/Q distribution for ALL datasets.
+
+    Layout – datasets as rows, statistics as columns (compact horizontal):
+
+        Dataset      | Type   | Mean  | Std   | Min | Median | P95 | Max
+        -------------|--------|-------|-------|-----|--------|-----|----
+        ArguAna      | Qrels  |  1.0  |  0.0  |  1  |   1    |  1  |  1
+        ...          |        |       |       |     |        |     |
+        BBC-News (5) | Cat.   | 450.6 | 55.0  | 385 |  416   | 510 | 510
+        ...          |        |       |       |     |        |     |
+
+    Includes all datasets with a "dist" key in DATASET_INFO.
+    """
+    ds_with_dist = [d for d in datasets if DATASET_INFO.get(d, {}).get("dist")]
+    if not ds_with_dist:
+        return "% No datasets with distribution data found.\n"
+
+    def _fmt_num(v: float) -> str:
+        """Format numeric value: integer if whole, else 1 decimal. LaTeX thousands sep."""
+        if v == int(v):
+            n = int(v)
+            s = f"{n:,}"
+            return s.replace(",", "{,}")
+        # Float with 1 decimal
+        if v >= 1000:
+            int_part = int(v)
+            frac = round((v - int_part) * 10)
+            s = f"{int_part:,}"
+            return s.replace(",", "{,}") + f".{frac}"
+        return f"{v:.1f}"
+
+    # Pick statistics that tell the story without being too wide:
+    # Mean, Std, Min, Median, P75, P95, Max  (7 stat columns)
+    stat_keys = [
+        ("Mean", "mean"),
+        ("$\\sigma$", "std"),
+        ("Min", "min"),
+        ("Median", "median"),
+        ("P75", "p75"),
+        ("P95", "p95"),
+        ("Max", "max"),
+    ]
+
+    # Separate BEIR / category
+    beir_ds = [d for d in ds_with_dist if not DATASET_INFO[d].get("category_based")]
+    cat_ds = [d for d in ds_with_dist if DATASET_INFO[d].get("category_based")]
+
+    lines = [
+        "% ── Rel/Q distribution across all datasets ───────────────────",
+        "% Requires: \\usepackage{booktabs}",
+        "\\begin{table}[ht]",
+        "  \\centering",
+        "  \\caption{Distribution of relevant documents per query (Rel/Q). "
+        "For BEIR datasets, Rel/Q is the number of judged-relevant documents "
+        "per query from official qrels. "
+        "For category-based datasets, Rel/Q counts same-category documents "
+        "excluding the query itself; percentiles are weighted by category size.}",
+        "  \\label{tab:relq-distribution}",
+        "  \\small",
+        "  \\begin{tabular}{ll rrrrrrr}",
+        "    \\toprule",
+        "    Dataset & Eval.\\ Type & "
+        + " & ".join(h for h, _ in stat_keys)
+        + " \\\\",
+        "    \\midrule",
+    ]
+
+    def _emit_row(ds: str) -> str:
+        info = DATASET_INFO[ds]
+        dist = info["dist"]
+        ds_display = DATASET_DISPLAY.get(ds, ds)
+        # Eval type column
+        if info.get("category_based"):
+            n_cats = info.get("n_categories", "?")
+            eval_cell = f"Category ({n_cats})"
+        else:
+            eval_cell = info.get("eval_type", "Qrels")
+        cells = [_escape_latex(ds_display), eval_cell]
+        for _, key in stat_keys:
+            cells.append(_fmt_num(dist[key]))
+        return "    " + " & ".join(cells) + " \\\\"
+
+    for ds in beir_ds:
+        lines.append(_emit_row(ds))
+
+    if beir_ds and cat_ds:
+        lines.append("    \\midrule")
+
+    for ds in cat_ds:
+        lines.append(_emit_row(ds))
+
+    lines += [
+        "    \\bottomrule",
         "  \\end{tabular}",
-        "\\end{table*}",
+        "\\end{table}",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def generate_dataset_summary_table(datasets: List[str]) -> str:
+    """
+    Build a LaTeX table summarising the datasets used in the experiments.
+
+    Columns: Dataset | #Docs | #Queries | Avg Rel/Q | Eval Type | Domain
+
+    For BEIR datasets, Avg Rel/Q comes from official qrels.
+    For category-based datasets, Avg Rel/Q = Σ_c [n_c × (n_c − 1)] / N
+    (each document is a query; relevant = other docs in same category).
+
+    Category-based queries are marked with † (every document = a query).
+    """
+    # Separate BEIR and category-based for the midrule divider
+    beir_datasets = [d for d in datasets if not DATASET_INFO.get(d, {}).get("category_based")]
+    category_datasets = [d for d in datasets if DATASET_INFO.get(d, {}).get("category_based")]
+
+    lines = [
+        "% ── Dataset summary table ─────────────────────────────────────",
+        "% Requires: \\usepackage{booktabs}",
+        "\\begin{table}[ht]",
+        "  \\centering",
+        "  \\caption{Summary of datasets used in the experiments. "
+        "BEIR datasets use standard relevance judgments (qrels); "
+        "category-based datasets treat every document as a query and "
+        "define relevance by shared category membership (excluding the query itself).}",
+        "  \\label{tab:datasets}",
+        "  \\small",
+        "  \\begin{tabular}{lrrlll}",
+        "    \\toprule",
+        "    Dataset & \\#Docs & \\#Queries & Avg.\\,Rel/Q & Eval.\\,Type & Domain \\\\",
+        "    \\midrule",
+    ]
+
+    def _fmt_int(n: int) -> str:
+        """Format integer with thousands separator using LaTeX thin space."""
+        s = f"{n:,}"
+        return s.replace(",", "{,}")
+
+    def _fmt_avg_rel(val: float) -> str:
+        """Format Avg Rel/Q: 1 decimal, with thousands separator if large."""
+        if val >= 1000:
+            # e.g. 2044.0 → "2{,}044.0"
+            int_part = int(val)
+            frac = val - int_part
+            return f"{_fmt_int(int_part)}.{int(frac * 10)}"
+        return f"{val:.1f}"
+
+    # BEIR datasets
+    for ds in beir_datasets:
+        info = DATASET_INFO.get(ds)
+        if info is None:
+            continue
+        ds_display = DATASET_DISPLAY.get(ds, ds)
+        lines.append(
+            f"    {_escape_latex(ds_display)}"
+            f" & {_fmt_int(info['docs'])}"
+            f" & {_fmt_int(info['queries'])}"
+            f" & {_fmt_avg_rel(info['avg_rel_q'])}"
+            f" & {info['eval_type']}"
+            f" & {info['domain']} \\\\"
+        )
+
+    # Separator between BEIR and category-based
+    if beir_datasets and category_datasets:
+        lines.append("    \\midrule")
+
+    # Category-based datasets
+    for ds in category_datasets:
+        info = DATASET_INFO.get(ds)
+        if info is None:
+            continue
+        ds_display = DATASET_DISPLAY.get(ds, ds)
+        n_cats = info.get("n_categories", "?")
+        lines.append(
+            f"    {_escape_latex(ds_display)}"
+            f" & {_fmt_int(info['docs'])}"
+            f" & {_fmt_int(info['queries'])}$^{{\\dagger}}$"
+            f" & {_fmt_avg_rel(info['avg_rel_q'])}"
+            f" & Category ({n_cats})"
+            f" & {info['domain']} \\\\"
+        )
+
+    lines += [
+        "    \\bottomrule",
+        "  \\end{tabular}",
+        "  \\par\\smallskip",
+        "  \\parbox{\\textwidth}{\\scriptsize",
+        "  $^{\\dagger}$ Every document serves as both query and potential result.",
+        "  Avg.\\,Rel/Q for category-based datasets counts same-category documents",
+        "  (excluding the query itself).}",
+        "\\end{table}",
         "",
     ]
     return "\n".join(lines)
@@ -655,11 +978,12 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["complete", "compact", "paper"],
+        choices=["complete", "compact", "paper", "dataset-summary"],
         default="complete",
         help="Table layout mode: 'complete' shows all models × methods with baselines "
         "(dissertation); 'compact' shows one best row per model with Δ%%%% inline; "
-        "'paper' generates a single unified table across all datasets (article). "
+        "'paper' generates a single unified table across all datasets (article); "
+        "'dataset-summary' generates the dataset overview table with statistics. "
         "Default: complete",
     )
     return parser.parse_args(argv)
@@ -667,6 +991,29 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
 
 def main(argv: Optional[List[str]] = None) -> None:
     args = parse_args(argv)
+
+    # ── Dataset-summary mode doesn't need experiment data ───────────────
+    if args.mode == "dataset-summary":
+        # Use all datasets in canonical order unless --datasets overrides
+        all_ds_order = [
+            "arguana", "scifact", "nfcorpus", "scidocs", "fiqa",
+            "bbc-news", "wos", "huffpost-news", "mental-health",
+        ]
+        datasets = args.datasets or all_ds_order
+        parts = [
+            "% Auto-generated by generate_latex_tables.py --mode dataset-summary",
+            "% Requires: \\usepackage{booktabs}",
+            "",
+            generate_dataset_summary_table(datasets),
+            generate_distribution_table(datasets),
+        ]
+        output_text = "\n".join(parts)
+        out_path = Path(args.output)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(output_text, encoding="utf-8")
+        print(f"✅ Dataset summary table written to {out_path}")
+        print(f"   Datasets: {', '.join(datasets)}")
+        return
 
     data = load_data(args.data)
     baseline_comparison = data.get("baseline_comparison", {})

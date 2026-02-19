@@ -57,6 +57,7 @@ Output PDFs land in `outputs/paper-assets/figures/`.
 | `--reducer` | `umap` | Dimensionality reduction (`umap` or `tsne`) |
 | `--sample-size` | all | Subsample N documents (useful for 20K+ corpora) |
 | `--n-sample-queries` | `1` | Max queries per category in the overlay figure |
+| `--max-queries` | `8` | Global cap on the total number of queries in the overlay figure |
 | `--output-dir` | `outputs/paper-assets/figures/` | Where to save figures |
 | `--format` | `pdf` | Output format (`pdf`, `svg`, `png`) |
 | `--seed` | `42` | Random seed for UMAP and subsampling |

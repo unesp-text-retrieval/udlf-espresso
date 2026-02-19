@@ -232,11 +232,17 @@ Generate LaTeX tables summarising re-ranking effectiveness across all datasets, 
 # Compact tables for a paper (one best method per model, @20 only)
 python scripts/generate_latex_tables.py --mode compact
 
+# Single-page unified table across all datasets (article)
+python scripts/generate_latex_tables.py --mode paper
+
+# Dataset overview table (summary + Rel/Q distribution)
+python scripts/generate_latex_tables.py --mode dataset-summary --output outputs/paper-assets/dataset_summary.tex
+
 # Full tables for a dissertation (all model × method combos, multiple cutoffs)
 python scripts/generate_latex_tables.py --mode complete --cutoffs 20 50 200
 ```
 
-Output: `outputs/paper-assets/latex_rerank_tables.tex` — include via `\input{}` in LaTeX.
+Output: `outputs/paper-assets/latex_rerank_tables.tex` (rerank tables) or `outputs/paper-assets/dataset_summary.tex` (dataset overview) — include via `\input{}` in LaTeX.
 
 ### Manifold Visualisation Figures (UMAP / t-SNE)
 

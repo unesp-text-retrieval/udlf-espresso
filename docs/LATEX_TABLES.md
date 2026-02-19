@@ -11,6 +11,7 @@ Two layout modes are available:
 | **complete** | Dissertations, appendices | Every model × method × K combination with baseline rows and all requested cutoffs (@20, @50, @200) |
 | **compact** | Papers (space-constrained) | One baseline row + one best-method row per model at @20, with inline Δ% on the rerank values |
 | **paper** | 12-page articles | A single unified table spanning all datasets on one page, one row per (dataset, model) with Δ% |
+| **dataset-summary** | Dataset overview | Table listing all 9 datasets with #Docs, #Queries, Avg Rel/Q, evaluation type, and domain |
 
 Both `complete` and `compact` modes also emit a **cross-dataset summary table** that picks the single best (model, method, K) per dataset. `paper` mode is self-contained.
 
@@ -27,6 +28,9 @@ python scripts/generate_latex_tables.py --mode compact
 
 # Single-page table with all datasets (article)
 python scripts/generate_latex_tables.py --mode paper
+
+# Dataset overview table
+python scripts/generate_latex_tables.py --mode dataset-summary --output outputs/paper-assets/dataset_summary.tex
 
 # Specific cutoffs and datasets
 python scripts/generate_latex_tables.py --cutoffs 20 50 --datasets bbc-news mental-health scifact
@@ -45,7 +49,7 @@ Output `.tex` file lands in `outputs/paper-assets/latex_rerank_tables.tex` by de
 | `--output` | `outputs/paper-assets/latex_rerank_tables.tex` | Output `.tex` file |
 | `--datasets` | all in data | Subset of datasets to include |
 | `--cutoffs` | `20 50 200` | Cutoff values for column groups (complete mode) |
-| `--mode` | `complete` | `complete`, `compact`, or `paper` |
+| `--mode` | `complete` | `complete`, `compact`, `paper`, or `dataset-summary` |
 | `--no-summary` | false | Skip the cross-dataset summary table |
 
 ---

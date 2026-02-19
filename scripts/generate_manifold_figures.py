@@ -408,7 +408,8 @@ def figure_before_after_overlay(
     id_to_idx = {did: i for i, did in enumerate(doc_ids)}
 
     n_queries = len(sample_queries)
-    fig, axes = plt.subplots(n_queries, 2, figsize=(10, 4.0 * n_queries), dpi=150)
+    row_height = 3.0  # inches per query row (compact for paper figures)
+    fig, axes = plt.subplots(n_queries, 2, figsize=(10, row_height * n_queries), dpi=150)
     if n_queries == 1:
         axes = axes.reshape(1, 2)
 
@@ -743,6 +744,8 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
                    help="Subsample documents for large datasets (default: all).")
     p.add_argument("--n-sample-queries", type=int, default=1,
                    help="Number of queries to sample per category for the overlay figure (default: 1).")
+    p.add_argument("--max-queries", type=int, default=8,
+                   help="Global cap on the number of queries shown in the overlay figure (default: 8).")
     p.add_argument("--output-dir", default=None,
                    help="Output directory for figures (default: outputs/paper-assets/figures/).")
     p.add_argument("--format", choices=["pdf", "svg", "png"], default="pdf",
@@ -842,7 +845,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         candidate_qids=sampled_ids,  # restrict to subsampled docs when applicable
     )
     # Limit to avoid overly tall figure
-    sample_qs = sample_qs[:8]
+    sample_qs = sample_qs[:args.max_queries]
 
     fig2 = figure_before_after_overlay(
         coords_2d, doc_ids, categories,
